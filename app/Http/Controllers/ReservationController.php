@@ -14,6 +14,9 @@ use App\Http\Requests\StoreReservationRequest;
 use App\Http\Requests\StoreReviewRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Artisan;
+use Stripe\Stripe;
+use Stripe\Charge;
+use Illuminate\Support\Facades\Log;
 
 class ReservationController extends Controller
 {
@@ -101,20 +104,20 @@ class ReservationController extends Controller
 
         // Sprawdzenie dostępności samochodu w podanym przedziale czasowym
         $existingReservations = Reservation::where('car_id', $car->id)
-        ->where(function ($query) use ($checkStartDate, $endDate, $startDate) {
-            $query->whereBetween('start_date', [$checkStartDate, $endDate])
-                ->orWhereBetween('end_date', [$checkStartDate, $endDate])
-                ->orWhere(function ($query) use ($checkStartDate, $endDate, $startDate) {
-                    $query->where('start_date', '<', $checkStartDate)
-                        ->where('end_date', '>', $endDate);
-                })
-                // Dodanie warunku dla dokładnie tego samego przedziału czasowego
-                ->orWhere(function ($query) use ($startDate, $endDate) {
-                    $query->where('start_date', '=', $startDate)
-                        ->where('end_date', '=', $endDate);
-                });
-        })
-        ->get();
+            ->where(function ($query) use ($checkStartDate, $endDate, $startDate) {
+                $query->whereBetween('start_date', [$checkStartDate, $endDate])
+                    ->orWhereBetween('end_date', [$checkStartDate, $endDate])
+                    ->orWhere(function ($query) use ($checkStartDate, $endDate, $startDate) {
+                        $query->where('start_date', '<', $checkStartDate)
+                            ->where('end_date', '>', $endDate);
+                    })
+                    // Dodanie warunku dla dokładnie tego samego przedziału czasowego
+                    ->orWhere(function ($query) use ($startDate, $endDate) {
+                        $query->where('start_date', '=', $startDate)
+                            ->where('end_date', '=', $endDate);
+                    });
+            })
+            ->get();
 
         if (!$existingReservations->isEmpty()) {
             return back()->withErrors(['car_id' => 'This car is not available in the selected date range.']);
@@ -123,6 +126,20 @@ class ReservationController extends Controller
         // Obliczenie liczby dni i całkowitej ceny
         $diffDays = ceil($diffTimeInSeconds / (60 * 60 * 24));
         $totalPrice = $diffDays * $car->price;
+
+        // Obsługa płatności Stripe
+        Stripe::setApiKey(env('STRIPE_SECRET'));
+        $token = $request->input('stripeToken');
+        try {
+            $charge = Charge::create([
+                'amount' => $totalPrice * 100, // Amount in grosze (1 PLN = 100 groszy)
+                'currency' => 'pln',
+                'description' => 'Car rental payment',
+                'source' => $token,
+            ]);
+        } catch (\Exception $e) {
+            return back()->withErrors(['stripe' => 'Payment failed: ' . $e->getMessage()]);
+        }
 
         // Zapisanie rezerwacji
         $reservation = new Reservation([
@@ -139,7 +156,7 @@ class ReservationController extends Controller
         // Aktualizacja dostępności samochodów po zapisaniu rezerwacji
         Artisan::call('update:car-availability');
 
-        return redirect(route('reservations.session'))->with('status', 'Reservation stored!');
+        return redirect(route('reservations.session'))->with('status', 'Reservation stored and payment completed successfully!');
     }
 
     /**
@@ -211,38 +228,34 @@ class ReservationController extends Controller
     {
         $validatedData = $request->validated();
 
-        // Pobranie oryginalnego samochodu z rezerwacji
-        $car = Car::findOrFail($reservation->car_id);
+        try {
+            $car = Car::findOrFail($validatedData['car_id']);
+            $startDate = new \DateTime($validatedData['start_date']);
+            $endDate = new \DateTime($validatedData['end_date']);
+            $diffTime = $endDate->getTimestamp() - $startDate->getTimestamp();
+            $diffDays = ceil($diffTime / (60 * 60 * 24));
+            $totalPrice = $diffDays * $car->price;
 
-        // Pobranie daty początkowej i końcowej z formularza
-        $startDate = new \DateTime($validatedData['start_date']);
-        $endDate = new \DateTime($validatedData['end_date']);
+            $reservation->start_date = $validatedData['start_date'];
+            $reservation->end_date = $validatedData['end_date'];
+            $reservation->car_id = $validatedData['car_id'];
+            $reservation->total_price = $totalPrice;
+            $reservation->status = $validatedData['status'];
 
-        // Obliczenie różnicy czasu w sekundach
-        $diffTime = $endDate->getTimestamp() - $startDate->getTimestamp();
+            $reservation->save();
 
-        // Obliczenie liczby dni i godzin wynajmu
-        $diffDays = floor($diffTime / (60 * 60 * 24)); // Całkowita liczba dni
-        $diffHours = ceil(($diffTime % (60 * 60 * 24)) / (60 * 60)); // Reszta podzielona przez 1 godzinę
+            Artisan::call('update:car-availability');
 
-        // Obliczenie całkowitej ceny wypożyczenia na podstawie oryginalnej ceny samochodu
-        $totalPrice = ($diffDays * $car->price_per_day) + ($diffHours * ($car->price_per_day / 24));
+            if (auth()->user()->role === 'admin') {
+                return redirect()->route('reservations.index')->with('status', 'Reservation updated!');
+            } else {
+                return redirect()->route('reservations.session')->with('status', 'Reservation updated!');
+            }
+        } catch (\Exception $e) {
+            Log::error('Error updating reservation: ' . $e->getMessage());
 
-        // Aktualizacja istniejącej rezerwacji
-        $reservation->fill([
-            'start_date' => $validatedData['start_date'],
-            'end_date' => $validatedData['end_date'],
-            'total_price' => $totalPrice,
-            'status' => $validatedData['status']
-        ]);
-        $reservation->save();
-
-        // Przekierowanie na odpowiednią ścieżkę w zależności od roli użytkownika
-        if (auth()->user()->role === UserRole::USER) {
-            return redirect()->route('reservations.session')->with('status', 'Reservation updated!');
+            return back()->withInput()->withErrors(['error' => 'Failed to update reservation.']);
         }
-
-        return redirect()->route('reservations.index')->with('status', 'Reservation updated!');
     }
 
     /**

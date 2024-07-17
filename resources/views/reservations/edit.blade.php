@@ -61,9 +61,9 @@
                             <label for="start_date" class="col-md-4 col-form-label text-md-end">Rental Date</label>
                             <div class="col-md-6">
                                 @if(Auth::user()->role === 'admin')
-                                <input id="start_date" type="datetime-local" class="form-control @error('start_date') is-invalid @enderror" name="start_date" value="{{ old('start_date', $reservations->start_date) }}" required autocomplete="start_date">
+                                <input id="start_date" type="datetime-local" class="form-control @error('start_date') is-invalid @enderror" name="start_date" value="{{ old('start_date', \Carbon\Carbon::parse($reservations->start_date)->format('Y-m-d\TH:i')) }}" required>
                                 @else
-                                <input id="start_date" type="datetime-local" class="form-control @error('start_date') is-invalid @enderror" name="start_date" value="{{ old('start_date', $reservations->start_date) }}" required autocomplete="start_date" disabled>
+                                <input id="start_date" type="datetime-local" class="form-control @error('start_date') is-invalid @enderror" name="start_date" value="{{ old('start_date', \Carbon\Carbon::parse($reservations->start_date)->format('Y-m-d\TH:i')) }}" required disabled>
                                 <input type="hidden" name="start_date" value="{{ $reservations->start_date }}">
                                 @endif
 
@@ -79,9 +79,9 @@
                             <label for="end_date" class="col-md-4 col-form-label text-md-end">Return Date</label>
                             <div class="col-md-6">
                                 @if(Auth::user()->role === 'admin')
-                                <input id="end_date" type="datetime-local" class="form-control @error('end_date') is-invalid @enderror" name="end_date" value="{{ old('end_date', $reservations->end_date) }}" required autocomplete="end_date">
+                                <input id="end_date" type="datetime-local" class="form-control @error('end_date') is-invalid @enderror" name="end_date" value="{{ old('end_date', \Carbon\Carbon::parse($reservations->end_date)->format('Y-m-d\TH:i')) }}" required>
                                 @else
-                                <input id="end_date" type="datetime-local" class="form-control @error('end_date') is-invalid @enderror" name="end_date" value="{{ old('end_date', $reservations->end_date) }}" required autocomplete="end_date" disabled>
+                                <input id="end_date" type="datetime-local" class="form-control @error('end_date') is-invalid @enderror" name="end_date" value="{{ old('end_date', \Carbon\Carbon::parse($reservations->end_date)->format('Y-m-d\TH:i')) }}" required disabled>
                                 <input type="hidden" name="end_date" value="{{ $reservations->end_date }}">
                                 @endif
 
@@ -96,12 +96,8 @@
                         <div class="row mb-3">
                             <label for="total_price" class="col-md-4 col-form-label text-md-end">Total Price</label>
                             <div class="col-md-6">
-                                @if(Auth::user()->role === 'admin')
-                                    <input id="total_price" type="number" step="0.01" min="0" class="form-control @error('total_price') is-invalid @enderror" name="total_price" value="{{ old('total_price', $reservations->total_price) }}" required autocomplete="total_price" readonly>
-                                @else
-                                    <input id="total_price" type="number" step="0.01" min="0" class="form-control @error('total_price') is-invalid @enderror" name="total_price" value="{{ old('total_price', $reservations->total_price) }}" required autocomplete="total_price" disabled>
-                                    <input type="hidden" id="carPrice" value="{{ $reservations->car->price_per_day }}">
-                                @endif
+                                <input id="total_price" type="number" step="0.01" min="0" class="form-control @error('total_price') is-invalid @enderror" name="total_price" value="{{ old('total_price', $reservations->total_price) }}" required readonly>
+                                <input type="hidden" id="carPrice" value="{{ $reservations->car->price }}">
 
                                 @error('total_price')
                                 <span class="invalid-feedback" role="alert">
@@ -115,10 +111,10 @@
                             <label for="status" class="col-md-4 col-form-label text-md-end">Status</label>
                             <div class="col-md-6">
                                 <select class="form-control" id="status" name="status" required>
-                                    <option value="pending" @if(old('status', $reservations->status) === 'pending') selected @endif>Pending</option>
-                                    {{--
-                                    <option value="confirmed" @if(old('status', $reservations->status) === 'confirmed') selected @endif>Confirmed</option>
-                                    --}}
+                                    @can('isAdmin')
+                                        <option value="pending" @if(old('status', $reservations->status) === 'pending') selected @endif>Pending</option>
+                                        <option value="confirmed" @if(old('status', $reservations->status) === 'confirmed') selected @endif>Confirmed</option>
+                                    @endcan
                                     <option value="cancelled" @if(old('status', $reservations->status) === 'cancelled') selected @endif>Cancelled</option>
                                 </select>
 
@@ -133,7 +129,12 @@
                         <div class="row mb-0">
                             <div class="col-md-6 offset-md-5">
                                 <button type="submit" class="btn btn-primary">Save</button>
-                                <a href="{{ route('reservations.index') }}" class="btn btn-secondary">Cancel</a>
+                                @can('isAdmin')
+                                    <a href="{{ route('reservations.index') }}" class="btn btn-secondary">Cancel</a>
+                                @endcan
+                                @can('isUser')
+                                    <a href="{{ route('reservations.session') }}" class="btn btn-secondary">Cancel</a>
+                                @endcan
                             </div>
                         </div>
                     </form>
@@ -148,26 +149,27 @@
         const startDateInput = document.getElementById('start_date');
         const endDateInput = document.getElementById('end_date');
         const totalPriceInput = document.getElementById('total_price');
-        const carPrice = parseFloat(document.getElementById('carPrice').value);
+        const carPricePerDay = parseFloat(document.getElementById('carPrice').value);
 
         function calculateTotalPrice() {
             const startDate = new Date(startDateInput.value);
             const endDate = new Date(endDateInput.value);
 
             if (startDate && endDate && startDate < endDate) {
-                const diffTime = endDate - startDate;
+                const diffTime = endDate.getTime() - startDate.getTime();
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                const totalPrice = diffDays * carPrice;
+                const totalPrice = diffDays * carPricePerDay;
+
                 totalPriceInput.value = totalPrice.toFixed(2);
             } else {
-                totalPriceInput.value = 0;
+                totalPriceInput.value = "0.00";
             }
         }
 
-        // Wywołanie funkcji calculateTotalPrice() przy załadowaniu strony
+        // Initial calculation
         calculateTotalPrice();
 
-        // Nasłuchiwanie zmian w polach daty i ponowne obliczanie ceny
+        // Event listeners for date changes
         startDateInput.addEventListener('change', calculateTotalPrice);
         endDateInput.addEventListener('change', calculateTotalPrice);
     });
