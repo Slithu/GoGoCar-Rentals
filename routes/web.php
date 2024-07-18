@@ -71,3 +71,6 @@ Route::get('/admin/reports/cars', [AdminController::class, 'generateCarsReport']
 Route::get('/admin/reports/rentals', [AdminController::class, 'generateRentalsReport'])->name('admin.reports.rentals')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/admin/reports/reviews', [AdminController::class, 'generateCarReviewsReport'])->name('admin.reports.reviews')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/admin/cars', [AdminController::class, 'cars'])->name('admin.cars')->middleware('auth')->middleware('can:isAdmin');
+
+Route::get('/payments/details/{reservation}', [PaymentController::class, 'showPaymentForm'])->name('payment.payment')->middleware('auth');
+Route::post('/payments/process', [PaymentController::class, 'processPayment'])->name('payment.process')->middleware('auth');

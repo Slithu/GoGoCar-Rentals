@@ -113,22 +113,6 @@ class UserSeeder extends Seeder
         ]);
 
         DB::table('users')->insert([
-            'name' => 'Jacek',
-            'surname' => 'Mach',
-            'sex' => 'Male',
-            'image_path' => '',
-            'role' => 'user',
-            'email' => 'jacekmach@gmail.com',
-            'phone' => '754855235',
-            'license' => '82352/52/2572',
-            'birth' => '1985-04-22',
-            'town' => 'Zabrze',
-            'zip_code' => '41-723',
-            'country' => 'Polska',
-            'password' => Hash::make('haslo123'),
-        ]);
-
-        DB::table('users')->insert([
             'name' => 'Krzysztof',
             'surname' => 'Kamis',
             'sex' => 'Male',

@@ -56,12 +56,12 @@ class ReservationController extends Controller
         $startDate = new \DateTime($validatedData['start_date']);
         $endDate = new \DateTime($validatedData['end_date']);
 
-        // Sprawdzenie czy data zwrotu jest wcześniejsza niż data wypożyczenia
+        // Walidacja dat
         if ($endDate <= $startDate) {
             return back()->withErrors(['end_date' => 'End date must be later than start date.']);
         }
 
-        // Obliczanie minimalnej daty rozpoczęcia nowej rezerwacji (zakończenie poprzedniej rezerwacji + 3 godziny)
+        // Obliczenie minimalnej daty rozpoczęcia nowej rezerwacji (zakończenie poprzedniej rezerwacji + 3 godziny)
         $lastReturnDate = Reservation::where('car_id', $car->id)
             ->where('end_date', '<', now())
             ->orderByDesc('end_date')
@@ -71,47 +71,39 @@ class ReservationController extends Controller
             $endDateTime = new \DateTime($lastReturnDate->end_date);
             $minStartDate = $endDateTime->modify('+3 hours');
 
-            // Sprawdzenie czy data startowa jest wcześniejsza niż minStartDate
             if ($startDate < $minStartDate) {
                 return back()->withErrors(['start_date' => 'Car can only be rented again after 3 hours from the last return date.']);
             }
         } else {
-            // Jeśli nie ma poprzednich wynajmów, można zacząć od razu
             $minStartDate = now();
         }
 
-        // Sprawdzenie czy data startowa jest wcześniejsza niż minStartDate
         if ($startDate < $minStartDate) {
             return back()->withErrors(['start_date' => 'Start date must be at least 3 hours from now.']);
         }
 
-        // Sprawdzenie czy data zwrotu jest wcześniejsza niż dzisiaj
         if ($endDate < now()) {
             return back()->withErrors(['end_date' => 'End date cannot be in the past.']);
         }
 
-        // Minimalny czas wynajmu to 1 godzina
         $diffTimeInSeconds = $endDate->getTimestamp() - $startDate->getTimestamp();
-        $diffHours = $diffTimeInSeconds / 3600; // Różnica w godzinach
+        $diffHours = $diffTimeInSeconds / 3600;
 
         if ($diffHours < 1) {
             return back()->withErrors(['end_date' => 'Minimum rental time is 1 hour.']);
         }
 
-        // Obliczenie daty minimalnej do sprawdzenia dostępności
         $checkStartDate = clone $startDate;
         $checkStartDate->modify('-2 hours');
 
-        // Sprawdzenie dostępności samochodu w podanym przedziale czasowym
         $existingReservations = Reservation::where('car_id', $car->id)
             ->where(function ($query) use ($checkStartDate, $endDate, $startDate) {
                 $query->whereBetween('start_date', [$checkStartDate, $endDate])
                     ->orWhereBetween('end_date', [$checkStartDate, $endDate])
-                    ->orWhere(function ($query) use ($checkStartDate, $endDate, $startDate) {
+                    ->orWhere(function ($query) use ($checkStartDate, $endDate) {
                         $query->where('start_date', '<', $checkStartDate)
                             ->where('end_date', '>', $endDate);
                     })
-                    // Dodanie warunku dla dokładnie tego samego przedziału czasowego
                     ->orWhere(function ($query) use ($startDate, $endDate) {
                         $query->where('start_date', '=', $startDate)
                             ->where('end_date', '=', $endDate);
@@ -123,25 +115,9 @@ class ReservationController extends Controller
             return back()->withErrors(['car_id' => 'This car is not available in the selected date range.']);
         }
 
-        // Obliczenie liczby dni i całkowitej ceny
         $diffDays = ceil($diffTimeInSeconds / (60 * 60 * 24));
         $totalPrice = $diffDays * $car->price;
 
-        // Obsługa płatności Stripe
-        Stripe::setApiKey(env('STRIPE_SECRET'));
-        $token = $request->input('stripeToken');
-        try {
-            $charge = Charge::create([
-                'amount' => $totalPrice * 100, // Amount in grosze (1 PLN = 100 groszy)
-                'currency' => 'pln',
-                'description' => 'Car rental payment',
-                'source' => $token,
-            ]);
-        } catch (\Exception $e) {
-            return back()->withErrors(['stripe' => 'Payment failed: ' . $e->getMessage()]);
-        }
-
-        // Zapisanie rezerwacji
         $reservation = new Reservation([
             'user_id' => $validatedData['user_id'],
             'car_id' => $validatedData['car_id'],
@@ -153,10 +129,9 @@ class ReservationController extends Controller
 
         $reservation->save();
 
-        // Aktualizacja dostępności samochodów po zapisaniu rezerwacji
         Artisan::call('update:car-availability');
 
-        return redirect(route('reservations.session'))->with('status', 'Reservation stored and payment completed successfully!');
+        return redirect()->route('payment.payment', ['reservation' => $reservation->id])->with('status', 'Reservation stored successfully!');
     }
 
     /**

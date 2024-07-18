@@ -18,7 +18,7 @@
                         </div>
                     @endif
 
-                    <form method="POST" action="{{ route('reservations.store') }}" id="payment-form">
+                    <form method="POST" action="{{ route('reservations.store') }}" id="reservation-form">
                         @csrf
 
                         <div class="row mb-3">
@@ -121,16 +121,8 @@
                         </div>
 
                         <div class="row mb-3">
-                            <label for="card-element" class="col-md-4 col-form-label text-md-end">Credit or debit card</label>
-                            <div class="col-md-6">
-                                <div id="card-element"></div>
-                                <div id="card-errors" role="alert"></div>
-                            </div>
-                        </div>
-
-                        <div class="row mb-0">
                             <div class="col-md-6 offset-md-5">
-                                <button type="submit" class="btn btn-primary">Submit Payment</button>
+                                <button type="submit" class="btn btn-primary">Go to Payment</button>
                             </div>
                         </div>
                     </form>
@@ -140,47 +132,8 @@
     </div>
 </div>
 
-<script src="https://js.stripe.com/v3/"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const stripe = Stripe('{{ env('STRIPE_KEY') }}');
-        const elements = stripe.elements();
-        const card = elements.create('card');
-        card.mount('#card-element');
-
-        card.addEventListener('change', function(event) {
-            const displayError = document.getElementById('card-errors');
-            if (event.error) {
-                displayError.textContent = event.error.message;
-            } else {
-                displayError.textContent = '';
-            }
-        });
-
-        const form = document.getElementById('payment-form');
-        form.addEventListener('submit', async function(event) {
-            event.preventDefault();
-
-            const {token, error} = await stripe.createToken(card);
-            if (error) {
-                const errorElement = document.getElementById('card-errors');
-                errorElement.textContent = error.message;
-            } else {
-                stripeTokenHandler(token);
-            }
-        });
-
-        function stripeTokenHandler(token) {
-            const form = document.getElementById('payment-form');
-            const hiddenInput = document.createElement('input');
-            hiddenInput.setAttribute('type', 'hidden');
-            hiddenInput.setAttribute('name', 'stripeToken');
-            hiddenInput.setAttribute('value', token.id);
-            form.appendChild(hiddenInput);
-
-            form.submit();
-        }
-
         const startDateInput = document.getElementById('start_date');
         const endDateInput = document.getElementById('end_date');
         const totalPriceInput = document.getElementById('total_price');
