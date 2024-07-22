@@ -50,15 +50,20 @@
                         <td>{{$reservation->total_price}}</td>
                         <td>{{$reservation->status}}</td>
                         <td>
-                                <a href="{{ route('reservations.show', $reservation->id) }}">
-                                    <button class="btn btn-success btn-sm">Show</button>
+                            @if ($reservation->carReturns->isEmpty())
+                                <a href="{{ route('returns.return', $reservation->id) }}">
+                                    <button class="btn btn-primary btn-sm">Take Return</button>
                                 </a>
-                                <a href="{{ route('reservations.edit', $reservation->id) }}">
-                                    <button class="btn btn-warning btn-sm">Edit</button>
-                                </a>
-                                <a href="{{ route('reservations.destroy', $reservation->id) }}">
-                                    <button class="btn btn-danger btn-sm">Delete</button>
-                                </a>
+                            @endif
+                            <a href="{{ route('reservations.show', $reservation->id) }}">
+                                <button class="btn btn-success btn-sm">Show</button>
+                            </a>
+                            <a href="{{ route('reservations.edit', $reservation->id) }}">
+                                <button class="btn btn-warning btn-sm">Edit</button>
+                            </a>
+                            <a href="{{ route('reservations.destroy', $reservation->id) }}">
+                                <button class="btn btn-danger btn-sm">Delete</button>
+                            </a>
                         </td>
                     </tr>
                 @endforeach

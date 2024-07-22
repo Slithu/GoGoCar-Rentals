@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Enums\UserRole;
 use App\Http\Requests\StoreReservationRequest;
 use App\Http\Requests\StoreReviewRequest;
+use App\Models\CarReturn;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Artisan;
 use Stripe\Stripe;
@@ -26,7 +27,7 @@ class ReservationController extends Controller
     public function index() : View
     {
         return view("reservations.index", [
-            'reservations' => Reservation::paginate(7),
+            'reservations' => Reservation::with('carReturns')->paginate(7),
             'users' => User::all(),
             'cars' => Car::all()
         ]);

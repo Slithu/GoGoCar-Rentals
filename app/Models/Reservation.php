@@ -27,4 +27,9 @@ class Reservation extends Model
     {
         return $this->belongsTo(Car::class);
     }
+
+    public function carReturns()
+    {
+        return $this->hasMany(CarReturn::class);
+    }
 }

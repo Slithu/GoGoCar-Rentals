@@ -41,7 +41,13 @@
                                 <a class="nav-link" href="{{ route('reservations.index') }}">Cars Rentals</a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link" href="{{ route('returns.index') }}">Cars Returns</a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link" href="{{ route('reviews.index') }}">Cars Reviews</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ route('payment.index') }}">Payments</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ route('admin.index') }}">Admin Panel</a>
@@ -52,7 +58,13 @@
                                 <a class="nav-link" href="{{ route('reservations.session') }}">My Rentals</a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link" href="{{ route('payment.user') }}">My Payments</a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link" href="{{ route('reviews.user') }}">My Reviews</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ route('returns.user_returns') }}">My Cars Returns</a>
                             </li>
                         @endcan
                     </ul>

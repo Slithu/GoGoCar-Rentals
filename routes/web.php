@@ -11,6 +11,7 @@ use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ReturnController;
 
 /*
 |--------------------------------------------------------------------------
@@ -74,3 +75,17 @@ Route::get('/admin/cars', [AdminController::class, 'cars'])->name('admin.cars')-
 
 Route::get('/payments/details/{reservation}', [PaymentController::class, 'showPaymentForm'])->name('payment.payment')->middleware('auth');
 Route::post('/payments/process', [PaymentController::class, 'processPayment'])->name('payment.process')->middleware('auth');
+Route::get('/payments/penalty/{carReturn}', [PaymentController::class, 'showPenaltyForm'])->name('payment.penalty')->middleware('auth');
+Route::post('/payments/penalty', [PaymentController::class, 'processPenalty'])->name('payment.processPenalty')->middleware('auth');
+Route::get('/payments/payload/{chargeId}', [PaymentController::class, 'showPayload'])->name('payment.payload')->middleware('auth');
+Route::get('/payments/list', [PaymentController::class, 'index'])->name('payment.index')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/payments/{payment}/delete', [PaymentController::class, 'destroy'])->name('payment.destroy')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/payments/user', [PaymentController::class, 'userPayments'])->name('payment.user')->middleware('auth')->middleware('can:isUser');
+
+Route::get('/returns/form/{reservation}', [ReturnController::class, 'showReturnForm'])->name('returns.return')->middleware('auth')->middleware('can:isAdmin');
+Route::post('/returns', [ReturnController::class, 'processReturn'])->name('returns.process')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/returns/list', [ReturnController::class, 'index'])->name('returns.index')->middleware('auth')->middleware('can:isAdmin');
+Route::post('/returns/{car_return}', [ReturnController::class, 'update'])->name('returns.update')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/returns/edit/{car_return}', [ReturnController::class, 'edit'])->name('returns.edit')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/returns/{car_return}/delete', [ReturnController::class, 'destroy'])->name('returns.destroy')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/returns/user', [ReturnController::class, 'userReturns'])->name('returns.user_returns')->middleware('auth')->middleware('can:isUser');
