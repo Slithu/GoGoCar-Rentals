@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('stripe_charge_id')->nullable();
             $table->integer('amount');
             $table->string('currency');
+            $table->enum('type', ['rental', 'penalty'])->default('rental');
             $table->timestamps();
         });
     }

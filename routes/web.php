@@ -77,7 +77,7 @@ Route::get('/payments/details/{reservation}', [PaymentController::class, 'showPa
 Route::post('/payments/process', [PaymentController::class, 'processPayment'])->name('payment.process')->middleware('auth');
 Route::get('/payments/penalty/{carReturn}', [PaymentController::class, 'showPenaltyForm'])->name('payment.penalty')->middleware('auth');
 Route::post('/payments/penalty', [PaymentController::class, 'processPenalty'])->name('payment.processPenalty')->middleware('auth');
-Route::get('/payments/payload/{chargeId}', [PaymentController::class, 'showPayload'])->name('payment.payload')->middleware('auth');
+Route::get('/payments/payload/{chargeId}', [PaymentController::class, 'showPayload'])->name('payment.payload')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/payments/list', [PaymentController::class, 'index'])->name('payment.index')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/payments/{payment}/delete', [PaymentController::class, 'destroy'])->name('payment.destroy')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/payments/user', [PaymentController::class, 'userPayments'])->name('payment.user')->middleware('auth')->middleware('can:isUser');

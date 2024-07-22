@@ -19,8 +19,11 @@
                                     <p><strong>Rental Date:</strong> {{ $userPayment->reservation->start_date }} --- {{ $userPayment->reservation->end_date }}</p>
                                     <p><strong>Amount:</strong> {{ $userPayment->amount }}</p>
                                     <p><strong>Currency:</strong> {{$userPayment->currency }} </p>
+                                    <p><strong>Type:</strong> {{$userPayment->type }} </p>
                                     <p><strong>Date:</strong> {{$userPayment->created_at }} </p>
-                                    <p><strong>Status:</strong> {{$userPayment->reservation->status }} </p>
+                                    @if ($userPayment->type == 'rental')
+                                        <p><strong>Status:</strong> {{$userPayment->reservation->status }} </p>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>

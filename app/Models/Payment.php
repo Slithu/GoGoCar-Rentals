@@ -16,6 +16,7 @@ class Payment extends Model
         'stripe_charge_id',
         'amount',
         'currency',
+        'type',
     ];
 
     public function reservation()

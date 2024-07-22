@@ -27,6 +27,7 @@
             <th scope="col">Stripe Charge ID</th>
             <th scope="col">Amount</th>
             <th scope="col">Currency</th>
+            <th scope="col">Type</th>
             <th scope="col">Actions</th>
             </tr>
         </thead>
@@ -42,6 +43,7 @@
                     <td>{{$payment->stripe_charge_id}}</td>
                     <td>{{$payment->amount}}</td>
                     <td>{{$payment->currency}}</td>
+                    <td>{{$payment->type}}</td>
                     <td>
                         <a href="{{ route('payment.payload', $payment->stripe_charge_id) }}">
                             <button class="btn btn-info btn-sm">See Details</button>

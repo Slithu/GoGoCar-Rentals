@@ -49,6 +49,7 @@ class PaymentController extends Controller
             $payment->stripe_charge_id = $charge->id;
             $payment->amount = $totalPrice;
             $payment->currency = 'PLN';
+            $payment->type = 'rental';
             $payment->save();
 
             return redirect()->route('reservations.session')->with('status', 'Payment successful!');
@@ -91,6 +92,7 @@ class PaymentController extends Controller
             $payment->stripe_charge_id = $charge->id;
             $payment->amount = $penaltyAmount;
             $payment->currency = 'PLN';
+            $payment->type = 'penalty';
             $payment->save();
 
             $carReturn->penalty_paid = true;
@@ -133,7 +135,7 @@ class PaymentController extends Controller
         return redirect(route('payment.index'))->with('status', 'Payment deleted!');
     }
 
-    public function userPayments()
+    public function userPayments(Payment $payment)
     {
         $userPayments = Payment::where('user_id', Auth::id())->paginate(4);
 
