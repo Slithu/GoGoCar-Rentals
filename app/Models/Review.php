@@ -31,4 +31,9 @@ class Review extends Model
     {
         return $this->belongsTo(Car::class);
     }
+
+    public function reservation()
+    {
+        return $this->belongsTo(Reservation::class, 'car_id', 'car_id');
+    }
 }

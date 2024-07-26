@@ -11,21 +11,22 @@
 </section>
 
 <div class="container mt-4">
-    @if (Auth::check() && isset($recommendedCars) && count($recommendedCars) > 0)
+    @can('isUser')
+        @if(Auth::check() && $recommendedCars->isNotEmpty())
         <div class="accordion" id="recommendedAccordion">
             <div class="accordion-item">
                 <h2 class="accordion-header" id="headingRecommended">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRecommended" aria-expanded="false" aria-controls="collapseRecommended" style="font-size: 1rem;">
+                    <button class="accordion-button collapsed bg-primary text-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRecommended" aria-expanded="false" aria-controls="collapseRecommended" style="font-size: 1rem;">
                         Recommended For You
                     </button>
                 </h2>
-                <div id="collapseRecommended" class="accordion-collapse collapse" aria-labelledby="headingRecommended" data-bs-parent="#recommendedAccordion">
+                <div id="collapseRecommended" class="accordion-collapse collapse bg-primary-subtle" aria-labelledby="headingRecommended" data-bs-parent="#recommendedAccordion">
                     <div class="accordion-body">
                         <div class="row">
                             @foreach ($recommendedCars as $car)
                                 <div class="col-md-4 mb-4">
                                     <div class="card">
-                                        <img src="{{ Storage::url($car->image_path) }}" class="card-img-top" alt="{{ $car->brand }} {{ $car->model }}">
+                                        <img src="{{ $car->image_path ? Storage::url($car->image_path) : 'default-image.jpg' }}" class="card-img-top" alt="{{ $car->brand }} {{ $car->model }}">
                                         <div class="card-body">
                                             <h5 class="card-title"><strong>{{ $car->brand }} {{ $car->model }}</strong></h5>
                                             <p class="card-text">{{ $car->description }}</p>
@@ -54,6 +55,7 @@
             </div>
         </div>
     @endif
+    @endcan
     <br><br>
 
     <form method="GET" action="{{ route('welcome') }}" class="mb-4">
@@ -118,7 +120,7 @@
             @foreach($cars as $car)
             <div class="col-md-4 mb-4">
                 <div class="card">
-                    <img src="{{ Storage::url($car->image_path) }}" class="card-img-top" alt="{{ $car->brand }} {{ $car->model }}">
+                    <img src="{{ $car->image_path ? Storage::url($car->image_path) : 'default-image.jpg' }}" class="card-img-top" alt="{{ $car->brand }} {{ $car->model }}">
                     <div class="card-body">
                         <h5 class="card-title"><strong>{{ $car->brand }} {{ $car->model }}</strong></h5>
                         <p class="card-text">{{ $car->description }}</p>

@@ -5,7 +5,7 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header bg-primary text-white text-center"><h5 class="mb-0">Your Payments</h5></div>
+                <div class="card-header bg-primary text-white text-center"><p class="mb-0">Your Payments</p></div>
 
                     <div class="card-body">
                         @if ($userPayments->isEmpty())
@@ -17,7 +17,7 @@
                                     <p><h5><strong>{{ $userPayment->user->name }} {{ $userPayment->user->surname }}</strong></h5></p>
                                     <p><strong>Car:</strong> {{ $userPayment->reservation->car->brand }} {{ $userPayment->reservation->car->model }}</p>
                                     <p><strong>Rental Date:</strong> {{ $userPayment->reservation->start_date }} --- {{ $userPayment->reservation->end_date }}</p>
-                                    <p><strong>Amount:</strong> {{ $userPayment->amount }}</p>
+                                    <p><strong>Amount:</strong> {{ $userPayment->amount }} </p>
                                     <p><strong>Currency:</strong> {{$userPayment->currency }} </p>
                                     <p><strong>Type:</strong> {{$userPayment->type }} </p>
                                     <p><strong>Date:</strong> {{$userPayment->created_at }} </p>

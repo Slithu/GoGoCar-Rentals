@@ -32,4 +32,9 @@ class Reservation extends Model
     {
         return $this->hasMany(CarReturn::class);
     }
+
+    public function review()
+    {
+        return $this->hasOne(Review::class, 'car_id', 'car_id')->whereColumn('user_id', 'user_id');
+    }
 }

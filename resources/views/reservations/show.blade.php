@@ -5,7 +5,7 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header text-center">Show Reservation</div>
+                <div class="card-header text-center bg-primary text-white"><h5 class="mb-0">Show Reservation</h5></div>
 
                 <div class="card-body">
                         <div class="row mb-3">
@@ -61,12 +61,12 @@
                         </div>
                         @can('isAdmin')
                             <a class="nav-link" href="{{ route('reservations.index') }}" style="text-align:center">
-                                <button class="btn btn-success btn-sm">Return to Reservations</button>
+                                <button class="btn btn-success">Return to Reservations</button>
                             </a>
                         @endcan
                         @can('isUser')
                             <a class="nav-link" href="{{ route('reservations.session') }}" style="text-align:center">
-                                <button class="btn btn-success btn-sm">Return to Reservations</button>
+                                <button class="btn btn-secondary">Return to Reservations</button>
                             </a>
                         @endcan
                 </div>

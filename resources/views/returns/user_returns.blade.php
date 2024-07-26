@@ -6,7 +6,7 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header bg-primary text-white text-center">
-                    <h5 class="mb-0">Your Car Returns</h5>
+                    <p class="mb-0">Your Car Returns</p>
                 </div>
 
                 <div class="card-body">

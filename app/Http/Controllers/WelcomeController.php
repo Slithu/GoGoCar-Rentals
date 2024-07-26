@@ -62,7 +62,9 @@ class WelcomeController extends Controller
         $recommendedCars = [];
         if (Auth::check()) {
             $user = Auth::user();
-            $recommendedCars = $this->recommendationService->getRecommendations($user);
+            $recommendedCarIds = $this->recommendationService->getRecommendations($user);
+
+            $recommendedCars = Car::whereIn('id', $recommendedCarIds)->get();
         }
 
         Artisan::call('update:car-availability');

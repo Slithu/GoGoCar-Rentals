@@ -39,7 +39,7 @@ Route::get('/profile', [UserController::class, 'profile'])->name('profile.show')
 Route::post('/profile/create', [UserController::class, 'create'])->name('profile.create')->middleware('auth');
 Route::post('/profile', [UserController::class, 'addProfilePhoto'])->name('profile.addProfilePhoto')->middleware('auth');
 
-Route::get('/cars', [CarController::class, 'index'])->name('cars.index');
+Route::get('/cars', [CarController::class, 'index'])->name('cars.index')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/cars/create', [CarController::class, 'create'])->name('cars.create')->middleware('can:isAdmin');
 Route::get('/cars/{car}', [CarController::class, 'show'])->name('cars.show')->middleware('can:isAdmin');
 Route::post('/cars', [CarController::class, 'store'])->name('cars.store')->middleware('can:isAdmin');
@@ -70,6 +70,9 @@ Route::get('/admin-panel', [AdminController::class, 'index'])->name('admin.index
 Route::get('/admin/reports/users', [AdminController::class, 'generateUsersReport'])->name('admin.reports.users')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/admin/reports/cars', [AdminController::class, 'generateCarsReport'])->name('admin.reports.cars')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/admin/reports/rentals', [AdminController::class, 'generateRentalsReport'])->name('admin.reports.rentals')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/admin/reports/daily_rentals', [AdminController::class, 'generateDailyRentalsReport'])->name('admin.reports.daily_rentals')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/admin/reports/weekly_rentals', [AdminController::class, 'generateWeeklyRentalsReport'])->name('admin.reports.weekly_rentals')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/admin/reports/monthly_rentals', [AdminController::class, 'generateMonthlyRentalsReport'])->name('admin.reports.monthly_rentals')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/admin/reports/reviews', [AdminController::class, 'generateCarReviewsReport'])->name('admin.reports.reviews')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/admin/cars', [AdminController::class, 'cars'])->name('admin.cars')->middleware('auth')->middleware('can:isAdmin');
 
