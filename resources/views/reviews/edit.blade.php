@@ -12,10 +12,27 @@
                         @csrf
 
                         <div class="row mb-3">
+                            <label for="reservation_id" class="col-md-4 col-form-label text-md-end">Rental</label>
+                            <div class="col-md-6">
+                                <select id="reservation_id" class="form-control" name="reservation_id">
+                                    @foreach($reservations as $reservation)
+                                        <option value="{{ $review->reservation->id }}" {{ $review->reservation->id == $reservation->id ? 'selected' : '' }}>
+                                            {{ $reservation->id }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
                             <label for="user_id" class="col-md-4 col-form-label text-md-end">User</label>
                             <div class="col-md-6">
                                 <select id="user_id" class="form-control" name="user_id">
-                                    <option value="{{ $review->user->id }}">{{ $review->user->name }} {{ $review->user->surname }}</option>
+                                    @foreach($users as $user)
+                                        <option value="{{ $review->user->id }}" {{ $review->user->id == $user->id ? 'selected' : '' }}>
+                                            {{ $user->name }} {{ $user->surname }}
+                                        </option>
+                                    @endforeach
                                 </select>
                             </div>
                         </div>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Car;
 use App\Models\User;
@@ -109,5 +110,219 @@ class AdminController extends Controller
             'cars' => Car::all(),
             'reservations' => Reservation::all()
         ]);
+    }
+
+    public function usersChart()
+    {
+        $startDate = now()->startOfYear();
+        $endDate = now();
+
+        $monthlyUserCounts = User::selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as count')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->groupBy('year', 'month')
+            ->orderBy('year')
+            ->orderBy('month')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'month' => $item->year . '-' . str_pad($item->month, 2, '0', STR_PAD_LEFT),
+                    'count' => $item->count,
+                ];
+            });
+
+        $months = $monthlyUserCounts->pluck('month');
+        $counts = $monthlyUserCounts->pluck('count');
+
+        return view('admin.charts.users.users', compact('months', 'counts'));
+    }
+
+    public function ageChart()
+    {
+        $now = Carbon::now()->year;
+
+        // Zakresy wiekowe
+        $ageRanges = [
+            '18-24' => [18, 24],
+            '25-34' => [25, 34],
+            '35-44' => [35, 44],
+            '45-54' => [45, 54],
+            '55-64' => [55, 64],
+            '65+'   => [65, PHP_INT_MAX]
+        ];
+
+        $ageCounts = array_fill_keys(array_keys($ageRanges), 0);
+
+        foreach (User::all() as $user) {
+            // Konwertuj string na obiekt Carbon
+            $birthDate = Carbon::parse($user->birth);
+            $age = $now - $birthDate->year;
+
+            foreach ($ageRanges as $label => $range) {
+                if ($age >= $range[0] && $age <= $range[1]) {
+                    $ageCounts[$label]++;
+                    break;
+                }
+            }
+        }
+
+        $ageLabels = array_keys($ageCounts);
+        $ageData = array_values($ageCounts);
+
+        return view('admin.charts.users.age', compact('ageLabels', 'ageData'));
+    }
+
+    public function genderChart()
+    {
+        $genders = ['Male', 'Female'];
+
+        $genderCounts = [
+            'Male'   => User::where('sex', 'male')->count(),
+            'Female' => User::where('sex', 'female')->count(),
+        ];
+
+        $genderLabels = array_keys($genderCounts);
+        $genderData = array_values($genderCounts);
+
+        return view('admin.charts.users.gender', compact('genderLabels', 'genderData'));
+    }
+
+    public function carsChart()
+    {
+        $startDate = now()->startOfYear();
+        $endDate = now();
+
+        $monthlyCarCounts = Car::selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as count')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->groupBy('year', 'month')
+            ->orderBy('year')
+            ->orderBy('month')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'month' => $item->year . '-' . str_pad($item->month, 2, '0', STR_PAD_LEFT),
+                    'count' => $item->count,
+                ];
+            });
+
+        $months = $monthlyCarCounts->pluck('month');
+        $counts = $monthlyCarCounts->pluck('count');
+
+        return view('admin.charts.cars', compact('months', 'counts'));
+    }
+
+    public function rentalsChart()
+    {
+        $startDate = now()->startOfYear();
+        $endDate = now();
+
+        $monthlyRentalCounts = Reservation::selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as count')
+            ->whereBetween('start_date', [$startDate, $endDate])
+            ->groupBy('year', 'month')
+            ->orderBy('year')
+            ->orderBy('month')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'month' => $item->year . '-' . str_pad($item->month, 2, '0', STR_PAD_LEFT),
+                    'count' => $item->count,
+                ];
+            });
+
+        $months = $monthlyRentalCounts->pluck('month');
+        $counts = $monthlyRentalCounts->pluck('count');
+
+        return view('admin.charts.rentals.rentals', compact('months', 'counts'));
+    }
+
+    public function carBodyChart()
+    {
+        $carBodies = Reservation::select('cars.car_body', DB::raw('count(reservations.id) as count'))
+            ->join('cars', 'reservations.car_id', '=', 'cars.id')
+            ->groupBy('cars.car_body')
+            ->pluck('count', 'car_body')
+            ->toArray();
+
+        $labels = array_keys($carBodies);
+        $counts = array_values($carBodies);
+
+        return view('admin.charts.rentals.car_body', compact('labels', 'counts'));
+    }
+
+    public function brandsChart()
+    {
+        $brandCounts = Reservation::join('cars', 'reservations.car_id', '=', 'cars.id')
+            ->select('cars.brand', DB::raw('COUNT(reservations.id) as count'))
+            ->groupBy('cars.brand')
+            ->orderBy('count', 'desc')
+            ->get();
+
+        $brands = $brandCounts->pluck('brand');
+        $counts = $brandCounts->pluck('count');
+
+        return view('admin.charts.rentals.brands', compact('brands', 'counts'));
+    }
+
+    public function averagePriceChart()
+    {
+        $averagePrices = Reservation::selectRaw('YEAR(start_date) as year, MONTH(start_date) as month, AVG(total_price) as average_price')
+            ->groupBy('year', 'month')
+            ->orderBy('year')
+            ->orderBy('month')
+            ->get();
+
+        $averagePrices = $averagePrices->map(function ($item) {
+            return [
+                'month' => $item->year . '-' . str_pad($item->month, 2, '0', STR_PAD_LEFT),
+                'average_price' => round($item->average_price, 2),
+            ];
+        });
+
+        $months = $averagePrices->pluck('month');
+        $prices = $averagePrices->pluck('average_price');
+
+        return view('admin.charts.rentals.average_price', compact('months', 'prices'));
+    }
+
+    public function rentalDurationChart()
+    {
+        $averageDurations = Reservation::selectRaw('YEAR(start_date) as year, MONTH(start_date) as month, AVG(DATEDIFF(end_date, start_date)) as average_duration')
+            ->groupBy('year', 'month')
+            ->orderBy('year')
+            ->orderBy('month')
+            ->get();
+
+        $months = $averageDurations->map(function ($item) {
+            return $item->year . '-' . str_pad($item->month, 2, '0', STR_PAD_LEFT);
+        });
+
+        $durations = $averageDurations->pluck('average_duration')->map(function ($duration) {
+            return round($duration, 2);
+        });
+
+        return view('admin.charts.rentals.rental_duration', compact('months', 'durations'));
+    }
+
+    public function reviewsChart()
+    {
+        $startDate = now()->startOfYear();
+        $endDate = now();
+
+        $monthlyReviewCounts = Review::selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as count')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->groupBy('year', 'month')
+            ->orderBy('year')
+            ->orderBy('month')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'month' => $item->year . '-' . str_pad($item->month, 2, '0', STR_PAD_LEFT),
+                    'count' => $item->count,
+                ];
+            });
+
+        $months = $monthlyReviewCounts->pluck('month');
+        $counts = $monthlyReviewCounts->pluck('count');
+
+        return view('admin.charts.reviews', compact('months', 'counts'));
     }
 }

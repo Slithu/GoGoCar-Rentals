@@ -28,12 +28,16 @@
                                         <a href="{{ route('reservations.edit', $reservation->id) }}">
                                             <button class="btn btn-info">Edit</button>
                                         </a>
-                                        @if ($reservation->end_date < now()->addHours(1))
+                                        @if ($reservation->end_date < now()->addHours(1) && !$reservation->review)
                                             <a href="{{ route('reservations.rate', $reservation->id) }}">
                                                 <button class="btn btn-primary">Rate</button>
                                             </a>
+                                        @else
+                                            @if ($reservation->review)
+                                                <p class="text-success"><br><strong>Car already rated</strong></p>
+                                            @endif
                                         @endif
-                                    </div><br>
+                                    </div>
                                 </div>
                             @endforeach
                         </div>

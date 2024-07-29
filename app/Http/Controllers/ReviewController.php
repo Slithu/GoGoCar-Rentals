@@ -9,6 +9,7 @@ use App\Models\Car;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\StoreReviewRequest;
+use App\Models\Reservation;
 use Illuminate\Http\RedirectResponse;
 
 class ReviewController extends Controller
@@ -18,7 +19,8 @@ class ReviewController extends Controller
         return view("reviews.index", [
             'reviews' => Review::paginate(4),
             'users' => User::all(),
-            'cars' => Car::all()
+            'cars' => Car::all(),
+            'reservations' => Reservation::all(),
         ]);
     }
 
@@ -27,7 +29,8 @@ class ReviewController extends Controller
         return view("reviews.show", [
             'review' => $review,
             'users' => User::all(),
-            'cars' => Car::all()
+            'cars' => Car::all(),
+            'reservations' => Reservation::all(),
         ]);
     }
 
@@ -36,7 +39,8 @@ class ReviewController extends Controller
         return view('reviews.edit', [
             'review' => $review,
             'users' => User::all(),
-            'cars' => Car::all()
+            'cars' => Car::all(),
+            'reservations' => Reservation::all(),
         ]);
     }
 

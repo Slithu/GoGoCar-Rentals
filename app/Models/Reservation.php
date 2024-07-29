@@ -35,6 +35,6 @@ class Reservation extends Model
 
     public function review()
     {
-        return $this->hasOne(Review::class, 'car_id', 'car_id')->whereColumn('user_id', 'user_id');
+        return $this->hasOne(Review::class);
     }
 }

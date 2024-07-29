@@ -9,6 +9,15 @@
 
                 <div class="card-body">
                         <div class="row mb-3">
+                            <label for="reservation_id" class="col-md-4 col-form-label text-md-end">Rental</label>
+                            <div class="col-md-6">
+                                <select id="reservation_id" class="form-control" name="reservation_id" disabled>
+                                        <option value="{{ $review->reservation_id }}"> {{ $review->reservation_id }}</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
                             <label for="user_id" class="col-md-4 col-form-label text-md-end">User</label>
                             <div class="col-md-6">
                                 <select id="user_id" class="form-control" name="user_id" disabled>

@@ -75,6 +75,16 @@ Route::get('/admin/reports/weekly_rentals', [AdminController::class, 'generateWe
 Route::get('/admin/reports/monthly_rentals', [AdminController::class, 'generateMonthlyRentalsReport'])->name('admin.reports.monthly_rentals')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/admin/reports/reviews', [AdminController::class, 'generateCarReviewsReport'])->name('admin.reports.reviews')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/admin/cars', [AdminController::class, 'cars'])->name('admin.cars')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/admin/charts/users', [AdminController::class, 'usersChart'])->name('admin.charts.users.users')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/admin/charts/users/age', [AdminController::class, 'ageChart'])->name('admin.charts.users.age')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/admin/charts/users/gender', [AdminController::class, 'genderChart'])->name('admin.charts.users.gender')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/admin/charts/cars', [AdminController::class, 'carsChart'])->name('admin.charts.cars')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/admin/charts/rentals', [AdminController::class, 'rentalsChart'])->name('admin.charts.rentals.rentals')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/admin/charts/car_body', [AdminController::class, 'carBodyChart'])->name('admin.charts.rentals.car_body')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/admin/charts/brands', [AdminController::class, 'brandsChart'])->name('admin.charts.rentals.brands')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/admin/charts/average_price', [AdminController::class, 'averagePriceChart'])->name('admin.charts.rentals.average_price')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/admin/charts/rental_duration', [AdminController::class, 'rentalDurationChart'])->name('admin.charts.rentals.rental_duration')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/admin/charts/reviews', [AdminController::class, 'reviewsChart'])->name('admin.charts.reviews')->middleware('auth')->middleware('can:isAdmin');
 
 Route::get('/payments/details/{reservation}', [PaymentController::class, 'showPaymentForm'])->name('payment.payment')->middleware('auth');
 Route::post('/payments/process', [PaymentController::class, 'processPayment'])->name('payment.process')->middleware('auth');

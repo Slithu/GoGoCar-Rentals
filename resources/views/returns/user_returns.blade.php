@@ -31,7 +31,7 @@
 
                                     @if ($carReturn->penalty_amount > 0)
                                         @if ($carReturn->penalty_paid)
-                                            <p class="text-success"><strong>Penalty has already been paid.</strong></p>
+                                            <p class="text-success"><strong>Penalty has already been paid</strong></p>
                                         @else
                                             <a href="{{ route('payment.penalty', ['carReturn' => $carReturn]) }}" class="btn btn-primary">Pay Penalty</a>
                                         @endif

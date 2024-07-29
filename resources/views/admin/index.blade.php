@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mt-5">
+<div class="container mt-3">
     <div class="row justify-content-center">
         <div class="col-12 col-md-8">
             <div class="card shadow">
@@ -61,6 +61,7 @@
                         </div>
                     </div>
                 </div>
+
                 <div class="card-header text-center">
                     <h5 class="card-title mb-0"><strong>Cars Availability</strong></h5>
                 </div>
@@ -69,6 +70,52 @@
                         <li class="list-group-item">
                             <a href="{{ route('admin.cars') }}" class="btn btn-primary btn-block">
                                 Cars Availability
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="card-header text-center">
+                    <h5 class="card-title mb-0"><strong>Charts</strong></h5>
+                </div>
+                <div class="card-body text-center">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <a href="{{ route('admin.charts.users.users') }}" class="btn btn-primary btn-block">
+                                Users Chart
+                            </a>
+                            <a href="{{ route('admin.charts.users.age') }}" class="btn btn-primary btn-block">
+                                Age Of Users
+                            </a>
+                            <a href="{{ route('admin.charts.users.gender') }}" class="btn btn-primary btn-block">
+                                Gender Of Users
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{{ route('admin.charts.cars') }}" class="btn btn-primary btn-block">
+                                Cars Chart
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{{ route('admin.charts.rentals.rentals') }}" class="btn btn-primary btn-block">
+                                Rentals Chart
+                            </a>
+                            <a href="{{ route('admin.charts.rentals.car_body') }}" class="btn btn-primary btn-block">
+                                Car Body Rentals Chart
+                            </a>
+                            <a href="{{ route('admin.charts.rentals.brands') }}" class="btn btn-primary btn-block">
+                                Car Brands Rentals Chart
+                            </a>
+                            <a href="{{ route('admin.charts.rentals.average_price') }}" class="btn btn-primary btn-block">
+                                Average Rentals Price Chart
+                            </a><br><br>
+                            <a href="{{ route('admin.charts.rentals.rental_duration') }}" class="btn btn-primary btn-block">
+                                Average Rentals Duration Chart
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{{ route('admin.charts.reviews') }}" class="btn btn-primary btn-block">
+                                Reviews Chart
                             </a>
                         </li>
                     </ul>

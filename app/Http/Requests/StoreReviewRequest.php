@@ -24,6 +24,7 @@ class StoreReviewRequest extends FormRequest
         return [
             'user_id' => 'required',
             'car_id' => 'required',
+            'reservation_id' => 'required',
             'comfort_rating' => 'required|integer|min:1|max:5',
             'driving_experience_rating' => 'required|integer|min:1|max:5',
             'fuel_efficiency_rating' => 'required|integer|min:1|max:5',

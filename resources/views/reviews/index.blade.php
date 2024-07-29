@@ -19,6 +19,7 @@
         <thead>
             <tr>
             <th scope="col">ID</th>
+            <th scope="col">Rental ID</th>
             <th scope="col">User ID</th>
             <th scope="col">User Name</th>
             <th scope="col">User Surname</th>
@@ -37,6 +38,7 @@
             @foreach ($reviews as $review)
                 <tr>
                     <th scope="row">{{$review->id}}</th>
+                    <td>{{$review->reservation_id}}</td>
                     <td>{{$review->user->id}}</td>
                     <td>{{$review->user->name}}</td>
                     <td>{{$review->user->surname}}</td>

@@ -14,6 +14,7 @@ class Review extends Model
     protected $fillable = [
         'user_id',
         'car_id',
+        'reservation_id',
         'comfort_rating',
         'driving_experience_rating',
         'fuel_efficiency_rating',
@@ -34,6 +35,6 @@ class Review extends Model
 
     public function reservation()
     {
-        return $this->belongsTo(Reservation::class, 'car_id', 'car_id');
+        return $this->belongsTo(Reservation::class);
     }
 }
