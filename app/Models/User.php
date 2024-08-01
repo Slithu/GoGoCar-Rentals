@@ -10,6 +10,8 @@ use Laravel\Sanctum\HasApiTokens;
 use App\Models\Review;
 use App\Models\CarReturn;
 use App\Models\Reservation;
+use App\Models\UserNotification;
+use App\Models\AdminNotification;
 
 class User extends Authenticatable
 {
@@ -73,5 +75,15 @@ class User extends Authenticatable
     public function payments()
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function userNotifications()
+    {
+        return $this->hasMany(UserNotification::class);
+    }
+
+    public function adminNotifications()
+    {
+        return $this->hasMany(AdminNotification::class);
     }
 }

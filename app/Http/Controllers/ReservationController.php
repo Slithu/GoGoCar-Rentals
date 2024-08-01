@@ -7,6 +7,7 @@ use App\Models\Reservation;
 use App\Models\User;
 use App\Models\Car;
 use App\Models\Review;
+use App\Models\UserNotification;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Auth;
 use App\Enums\UserRole;
@@ -18,18 +19,50 @@ use Illuminate\Support\Facades\Artisan;
 use Stripe\Stripe;
 use Stripe\Charge;
 use Illuminate\Support\Facades\Log;
+use App\Mail\RentalMail;
+use App\Models\AdminNotification;
+use Illuminate\Support\Facades\Mail;
 
 class ReservationController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index() : View
+    public function index(Request $request) : View
     {
-        return view("reservations.index", [
-            'reservations' => Reservation::with('carReturns')->paginate(7),
-            'users' => User::all(),
-            'cars' => Car::all()
+        $search = $request->input('search');
+
+        $query = Reservation::with('carReturns', 'user', 'car');
+
+        if ($search) {
+            $searchTerms = explode(' ', $search);
+
+            $query->where(function ($q) use ($searchTerms) {
+                foreach ($searchTerms as $term) {
+                    $q->where(function ($query) use ($term) {
+                        $query->whereHas('user', function ($subQuery) use ($term) {
+                            $subQuery->where('name', 'like', "%{$term}%")
+                                    ->orWhere('surname', 'like', "%{$term}%")
+                                    ->orWhere('email', 'like', "%{$term}%");
+                        })
+                        ->orWhereHas('car', function ($subQuery) use ($term) {
+                            $subQuery->where('brand', 'like', "%{$term}%")
+                                    ->orWhere('model', 'like', "%{$term}%");
+                        });
+                    });
+                }
+            });
+        }
+
+        $reservations = $query->paginate(7);
+
+        $users = User::all();
+        $cars = Car::all();
+
+        return view('reservations.index', [
+            'reservations' => $reservations,
+            'users' => $users,
+            'cars' => $cars
         ]);
     }
 
@@ -50,6 +83,8 @@ class ReservationController extends Controller
      */
     public function store(StoreReservationRequest $request): RedirectResponse
     {
+        $user = Auth::user();
+
         $validatedData = $request->validated();
         $car = Car::findOrFail($validatedData['car_id']);
 
@@ -129,6 +164,25 @@ class ReservationController extends Controller
         ]);
 
         $reservation->save();
+
+        UserNotification::create([
+            'user_id' => $user->id,
+            'title' => "New rental completed!",
+            'message' => "{$reservation->user->name} {$reservation->user->surname}\nCar: {$reservation->car->brand} {$reservation->car->model}\nRental Date: {$reservation->start_date->format('Y-m-d H:i:s')} --- {$reservation->end_date->format('Y-m-d H:i:s')}\nTotal Price: {$reservation->total_price} PLN",
+            'type' => 'rental',
+            'status' => 'unread',
+        ]);
+
+        AdminNotification::create([
+            'user_id' => 1,
+            'title' => "New rental completed!",
+            'message' => "Rental ID: {$reservation->id}\nUser ID: {$reservation->user->id}\nUser: {$reservation->user->name} {$reservation->user->surname}\nCar ID: {$reservation->car->id}\nCar: {$reservation->car->brand} {$reservation->car->model}\nRental Date: {$reservation->start_date->format('Y-m-d H:i:s')} --- {$reservation->end_date->format('Y-m-d H:i:s')}\nTotal Price: {$reservation->total_price} PLN",
+            'type' => 'rental',
+            'status' => 'unread',
+        ]);
+
+        $user = User::findOrFail($reservation->user_id);
+        Mail::to($user->email)->send(new RentalMail($reservation));
 
         Artisan::call('update:car-availability');
 

@@ -20,10 +20,13 @@
                                     <p><strong>Amount:</strong> {{ $userPayment->amount }} </p>
                                     <p><strong>Currency:</strong> {{$userPayment->currency }} </p>
                                     <p><strong>Type:</strong> {{$userPayment->type }} </p>
-                                    <p><strong>Date:</strong> {{$userPayment->created_at }} </p>
+                                    <p><strong>Date:</strong> {{$userPayment->created_at->addHour(2) }} </p>
                                     @if ($userPayment->type == 'rental')
                                         <p><strong>Status:</strong> {{$userPayment->reservation->status }} </p>
                                     @endif
+                                    <a href="{{ route('payment.payload', $userPayment->stripe_charge_id) }}">
+                                        <button class="btn btn-primary btn-sm">See Details</button>
+                                    </a>
                                 </div>
                             @endforeach
                         </div>

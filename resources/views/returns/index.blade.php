@@ -21,12 +21,22 @@
         </div>
     </div>
     <br>
+    <div class="row mb-4 d-flex justify-content-center">
+        <div class="col-6">
+            <form method="GET" action="{{ route('returns.index') }}">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="search" placeholder="Search by user and car" value="{{ request('search') }}">
+                    <button class="btn btn-primary" type="submit">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <div class="row">
         @foreach ($car_returns as $car_return)
             <div class="col-md-6">
                 <div class="card mb-4">
-                    <div class="card-header">
-                        <strong>Return ID: {{$car_return->id}}</strong>
+                    <div class="card-header text-center bg-primary text-white">
+                        Return ID: {{$car_return->id}}
                     </div>
                     <div class="card-body">
                         <p><strong>Rental ID:</strong> {{$car_return->reservation->id ?? 'None' }}</p>

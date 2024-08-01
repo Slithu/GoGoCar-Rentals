@@ -17,13 +17,30 @@ class CarController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index() : View
+    public function index(Request $request) : View
     {
         Artisan::call('update:car-availability');
 
-        $cars = Car::with('availability')->paginate(7);
+        $search = $request->input('search');
 
-        return view("cars.index", [
+        $query = Car::with('availability');
+
+        if ($search) {
+            $searchTerms = explode(' ', $search);
+
+            $query->where(function ($q) use ($searchTerms) {
+                foreach ($searchTerms as $term) {
+                    $q->where(function ($query) use ($term) {
+                        $query->where('brand', 'like', "%{$term}%")
+                            ->orWhere('model', 'like', "%{$term}%");
+                    });
+                }
+            });
+        }
+
+        $cars = $query->paginate(7);
+
+        return view('cars.index', [
             'cars' => $cars,
         ]);
     }

@@ -5,7 +5,7 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header text-center bg-primary text-white"><h5 class="mb-0">Editing A Rental</h5></div>
+                <div class="card-header text-center bg-primary text-white"><p class="mb-0">Editing A Rental</p></div>
 
                 <div class="card-body">
                     <form method="POST" action="{{ route('reservations.update', $reservations->id) }}">

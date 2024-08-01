@@ -14,6 +14,16 @@
             <h1>Cars Availability</h1>
         </div>
     </div><br><br>
+    <div class="row mb-4 d-flex justify-content-center">
+        <div class="col-6">
+            <form method="GET" action="{{ route('admin.cars') }}">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="search" placeholder="Search by brand and model" value="{{ request('search') }}">
+                    <button class="btn btn-primary" type="submit">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <div class="row">
         @foreach ($cars as $car)
             <div class="col-12 col-md-6 col-lg-4 mb-4">

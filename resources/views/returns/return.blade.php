@@ -19,37 +19,37 @@
 
                         <div class="form-group">
                             <label for="reservation_id"><strong>Rental ID:</strong></label>
-                            <input name="reservation_id" id="reservation_id" class="form-control text-center" value="{{ $reservation->id }}" readonly>
+                            <input name="reservation_id" id="reservation_id" class="form-control text-center" style="background-color: #DCDCDC" value="{{ $reservation->id }}" readonly>
                         </div><br>
 
                         <div class="form-group">
                             <label for="car_id"><strong>Car ID:</strong></label>
-                            <input name="car_id" id="car_id" class="form-control text-center" value="{{ $reservation->car->id }}" readonly>
+                            <input name="car_id" id="car_id" class="form-control text-center" style="background-color: #DCDCDC" value="{{ $reservation->car->id }}" readonly>
                         </div><br>
 
                         <div class="form-group">
                             <label for="car"><strong>Car:</strong></label>
-                            <input name="car" id="car" class="form-control text-center" value="{{ $reservation->car->brand }} {{ $reservation->car->model }}" readonly>
+                            <input name="car" id="car" class="form-control text-center" style="background-color: #DCDCDC" value="{{ $reservation->car->brand }} {{ $reservation->car->model }}" readonly>
                         </div><br>
 
                         <div class="form-group">
                             <label for="user_id"><strong>User ID:</strong></label>
-                            <input name="user_id" id="user_id" class="form-control text-center" value="{{ $reservation->user->id }}" readonly>
+                            <input name="user_id" id="user_id" class="form-control text-center" style="background-color: #DCDCDC" value="{{ $reservation->user->id }}" readonly>
                         </div><br>
 
                         <div class="form-group">
                             <label for="user"><strong>User:</strong></label>
-                            <input name="user" id="user" class="form-control text-center" value="{{ $reservation->user->name }} {{ $reservation->user->surname }}" readonly>
+                            <input name="user" id="user" class="form-control text-center" style="background-color: #DCDCDC" value="{{ $reservation->user->name }} {{ $reservation->user->surname }}" readonly>
                         </div><br>
 
                         <div class="form-group">
                             <label for="rental_date"><strong>Rental Date:</strong></label>
-                            <input name="rental_date" id="rental_date" class="form-control text-center" value="{{ $reservation->start_date }} --- {{ $reservation->end_date }}" readonly>
+                            <input name="rental_date" id="rental_date" class="form-control text-center" style="background-color: #DCDCDC" value="{{ $reservation->start_date }} --- {{ $reservation->end_date }}" readonly>
                         </div><br>
 
                         <div class="form-group">
                             <label for="price"><strong>Rental Price:</strong></label>
-                            <input name="price" id="price" class="form-control text-center" value="{{ $reservation->total_price }} PLN" readonly>
+                            <input name="price" id="price" class="form-control text-center" style="background-color: #DCDCDC" value="{{ $reservation->total_price }} PLN" readonly>
                         </div><br>
 
                         <div class="form-group">

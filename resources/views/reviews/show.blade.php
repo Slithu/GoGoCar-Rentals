@@ -5,7 +5,7 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header text-center">Show Reservation</div>
+                <div class="card-header text-center bg-primary text-white">Show Review</div>
 
                 <div class="card-body">
                         <div class="row mb-3">
@@ -80,7 +80,7 @@
                         </div>
 
                         <a class="nav-link" href="{{ route('reviews.index') }}" style="text-align:center">
-                            <button class="btn btn-success btn-sm">Return to Reviews</button>
+                            <button class="btn btn-secondary btn-sm">Return to Reviews</button>
                         </a>
                 </div>
             </div>

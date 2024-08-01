@@ -21,7 +21,16 @@
             </div>
         @endcan
     </div><br><br>
-    <br>
+    <div class="row mb-4 d-flex justify-content-center">
+        <div class="col-6">
+            <form method="GET" action="{{ route('cars.index') }}">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="search" placeholder="Search by brand and model" value="{{ request('search') }}">
+                    <button class="btn btn-primary" type="submit">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <table class="table table-striped table-hover">
         <thead>
             <tr>

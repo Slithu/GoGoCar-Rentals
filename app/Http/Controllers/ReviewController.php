@@ -14,13 +14,43 @@ use Illuminate\Http\RedirectResponse;
 
 class ReviewController extends Controller
 {
-    public function index() : View
+    public function index(Request $request) : View
     {
-        return view("reviews.index", [
-            'reviews' => Review::paginate(4),
-            'users' => User::all(),
-            'cars' => Car::all(),
-            'reservations' => Reservation::all(),
+        $search = $request->input('search');
+
+        $query = Review::query();
+
+        if ($search) {
+            $searchTerms = explode(' ', $search);
+
+            $query->where(function ($q) use ($searchTerms) {
+                foreach ($searchTerms as $term) {
+                    $q->where(function ($query) use ($term) {
+                        $query->whereHas('user', function ($subQuery) use ($term) {
+                            $subQuery->where('name', 'like', "%{$term}%")
+                                    ->orWhere('surname', 'like', "%{$term}%")
+                                    ->orWhere('email', 'like', "%{$term}%");
+                        })
+                        ->orWhereHas('car', function ($subQuery) use ($term) {
+                            $subQuery->where('brand', 'like', "%{$term}%")
+                                    ->orWhere('model', 'like', "%{$term}%");
+                        });
+                    });
+                }
+            });
+        }
+
+        $reviews = $query->paginate(4);
+
+        $users = User::all();
+        $cars = Car::all();
+        $reservations = Reservation::all();
+
+        return view('reviews.index', [
+            'reviews' => $reviews,
+            'users' => $users,
+            'cars' => $cars,
+            'reservations' => $reservations,
         ]);
     }
 

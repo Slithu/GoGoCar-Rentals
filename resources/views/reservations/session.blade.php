@@ -44,7 +44,7 @@
                     </div>
                 </div>
             </div>
-                <div class="mt-3">
+                <div class="position-fixed bottom-0 start-50 translate-middle-x">
                     {{ $reservations->links() }}
                 </div>
             @endif

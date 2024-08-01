@@ -5,7 +5,7 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header text-center">Creating A New Car</div>
+                <div class="card-header text-center bg-primary text-white">Creating A New Car</div>
 
                 <div class="card-body">
                     <form method="POST" action="{{ route('cars.store') }}" enctype="multipart/form-data">

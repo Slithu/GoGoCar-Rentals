@@ -17,6 +17,16 @@
         </div>
     </div>
     <br>
+    <div class="row mb-4 d-flex justify-content-center">
+        <div class="col-6">
+            <form method="GET" action="{{ route('reservations.index') }}">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="search" placeholder="Search by user and car" value="{{ request('search') }}">
+                    <button class="btn btn-primary" type="submit">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <div class="row">
         <table class="table table-striped table-hover">
             <thead>

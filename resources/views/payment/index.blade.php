@@ -15,6 +15,16 @@
         </div>
     </div>
     <br>
+    <div class="row mb-4 d-flex justify-content-center">
+        <div class="col-6">
+            <form method="GET" action="{{ route('payment.index') }}">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="search" placeholder="Search by user and car" value="{{ request('search') }}">
+                    <button class="btn btn-primary" type="submit">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <table class="table table-striped table-hover">
         <thead>
             <tr>
@@ -46,7 +56,7 @@
                     <td>{{$payment->type}}</td>
                     <td>
                         <a href="{{ route('payment.payload', $payment->stripe_charge_id) }}">
-                            <button class="btn btn-info btn-sm">See Details</button>
+                            <button class="btn btn-primary btn-sm">See Details</button>
                         </a>
                         <a href="{{ route('payment.destroy', $payment->id) }}">
                             <button class="btn btn-danger btn-sm">Delete</button>

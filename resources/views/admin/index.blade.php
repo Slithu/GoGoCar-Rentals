@@ -6,10 +6,10 @@
         <div class="col-12 col-md-8">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white text-center">
-                    <h5 class="card-title mb-0">Admin Panel</h5>
+                    <p class="card-title mb-0">Admin Panel</p>
                 </div>
                 <div class="card-header text-center">
-                    <h5 class="card-title mb-0"><strong>Reports</strong></h5>
+                    <p class="card-title mb-0"><strong>Reports</strong></p>
                 </div>
                 <div class="card-body text-center">
                     <div class="container">
@@ -63,7 +63,7 @@
                 </div>
 
                 <div class="card-header text-center">
-                    <h5 class="card-title mb-0"><strong>Cars Availability</strong></h5>
+                    <p class="card-title mb-0"><strong>Cars Availability</strong></p>
                 </div>
                 <div class="card-body text-center">
                     <ul class="list-group list-group-flush">
@@ -76,7 +76,7 @@
                 </div>
 
                 <div class="card-header text-center">
-                    <h5 class="card-title mb-0"><strong>Charts</strong></h5>
+                    <p class="card-title mb-0"><strong>Charts</strong></p>
                 </div>
                 <div class="card-body text-center">
                     <ul class="list-group list-group-flush">
@@ -117,6 +117,14 @@
                             <a href="{{ route('admin.charts.reviews') }}" class="btn btn-primary btn-block">
                                 Reviews Chart
                             </a>
+                            <a href="{{ route('admin.charts.average_reviews') }}" class="btn btn-primary btn-block">
+                                Average Reviews Chart
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{{ route('admin.charts.revenues') }}" class="btn btn-primary btn-block">
+                                Revenues Chart
+                            </a>
                         </li>
                     </ul>
                 </div>
@@ -124,4 +132,5 @@
         </div>
     </div>
 </div>
+<script src="{{ mix('js/app.js') }}"></script>
 @endsection

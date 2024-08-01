@@ -12,6 +12,9 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReturnController;
+use App\Http\Controllers\NotificationController;
+use App\Mail\PaymentMail;
+use Illuminate\Support\Facades\Mail;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,6 +41,7 @@ Route::get('/users/edit/{user}', [UserController::class, 'edit'])->name('users.e
 Route::get('/profile', [UserController::class, 'profile'])->name('profile.show')->middleware('auth');
 Route::post('/profile/create', [UserController::class, 'create'])->name('profile.create')->middleware('auth');
 Route::post('/profile', [UserController::class, 'addProfilePhoto'])->name('profile.addProfilePhoto')->middleware('auth');
+Route::get('/user/notifications', [NotificationController::class, 'user'])->name('profile.notifications')->middleware('auth')->middleware('isUser');
 
 Route::get('/cars', [CarController::class, 'index'])->name('cars.index')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/cars/create', [CarController::class, 'create'])->name('cars.create')->middleware('can:isAdmin');
@@ -85,12 +89,19 @@ Route::get('/admin/charts/brands', [AdminController::class, 'brandsChart'])->nam
 Route::get('/admin/charts/average_price', [AdminController::class, 'averagePriceChart'])->name('admin.charts.rentals.average_price')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/admin/charts/rental_duration', [AdminController::class, 'rentalDurationChart'])->name('admin.charts.rentals.rental_duration')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/admin/charts/reviews', [AdminController::class, 'reviewsChart'])->name('admin.charts.reviews')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/admin/charts/average_reviews', [AdminController::class, 'averageReviewsChart'])->name('admin.charts.average_reviews')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/admin/charts/revenues', [AdminController::class, 'revenuesChart'])->name('admin.charts.revenues')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/admin/notifications', [NotificationController::class, 'index'])->name('admin.notifications')->middleware('auth')->middleware('can:isAdmin');
+Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead')->middleware('auth')->middleware('isUser');
+Route::post('/notifications/{id}/read2', [NotificationController::class, 'markAsRead2'])->name('notifications.markAsRead2')->middleware('auth')->middleware('isAdmin');
+Route::get('/notifications/{notification}/delete', [NotificationController::class, 'destroy'])->name('notifications.destroy')->middleware('auth')->middleware('isUser');
+Route::get('/notifications/{notification}/delete2', [NotificationController::class, 'destroy2'])->name('notifications.destroy2')->middleware('auth')->middleware('isAdmin');
 
 Route::get('/payments/details/{reservation}', [PaymentController::class, 'showPaymentForm'])->name('payment.payment')->middleware('auth');
 Route::post('/payments/process', [PaymentController::class, 'processPayment'])->name('payment.process')->middleware('auth');
 Route::get('/payments/penalty/{carReturn}', [PaymentController::class, 'showPenaltyForm'])->name('payment.penalty')->middleware('auth');
 Route::post('/payments/penalty', [PaymentController::class, 'processPenalty'])->name('payment.processPenalty')->middleware('auth');
-Route::get('/payments/payload/{chargeId}', [PaymentController::class, 'showPayload'])->name('payment.payload')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/payments/payload/{chargeId}', [PaymentController::class, 'showPayload'])->name('payment.payload')->middleware('auth');
 Route::get('/payments/list', [PaymentController::class, 'index'])->name('payment.index')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/payments/{payment}/delete', [PaymentController::class, 'destroy'])->name('payment.destroy')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/payments/user', [PaymentController::class, 'userPayments'])->name('payment.user')->middleware('auth')->middleware('can:isUser');

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Car;
 use App\Models\User;
+use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Review;
 use Illuminate\Support\Facades\Artisan;
@@ -102,13 +103,32 @@ class AdminController extends Controller
         return $pdf->download('car_reviews_report.pdf');
     }
 
-    public function cars() : View
+    public function cars(Request $request): View
     {
         Artisan::call('update:car-availability');
 
-        return view("admin.cars", [
-            'cars' => Car::all(),
-            'reservations' => Reservation::all()
+        $search = $request->input('search');
+
+        $query = Car::query();
+
+        if ($search) {
+            $searchTerms = explode(' ', $search);
+
+            $query->where(function ($q) use ($searchTerms) {
+                foreach ($searchTerms as $term) {
+                    $q->where(function ($query) use ($term) {
+                        $query->where('brand', 'like', "%{$term}%")
+                              ->orWhere('model', 'like', "%{$term}%");
+                    });
+                }
+            });
+        }
+
+        $cars = $query->get();
+
+        return view('admin.cars', [
+            'cars' => $cars,
+            'reservations' => Reservation::all(),
         ]);
     }
 
@@ -325,4 +345,54 @@ class AdminController extends Controller
 
         return view('admin.charts.reviews', compact('months', 'counts'));
     }
+
+    public function averageReviewsChart()
+    {
+        $averageRatings = Review::selectRaw('car_id, AVG(overall_rating) as average_rating')
+            ->groupBy('car_id')
+            ->orderBy('average_rating', 'desc')
+            ->get();
+
+        $carDetails = Car::whereIn('id', $averageRatings->pluck('car_id'))
+            ->select('id', 'brand', 'model')
+            ->get()
+            ->keyBy('id');
+
+        $carLabels = $averageRatings->map(function ($item) use ($carDetails) {
+            $car = $carDetails->get($item->car_id);
+            return $car ? "{$car->brand} {$car->model}" : 'Unknown Car';
+        });
+
+        $ratings = $averageRatings->map(function ($item) {
+            return round($item->average_rating, 2);
+        });
+
+        return view('admin.charts.average_reviews', compact('carLabels', 'ratings'));
+    }
+
+    public function revenuesChart()
+    {
+        $startDate = now()->startOfYear();
+        $endDate = now();
+
+        $monthlyRevenues = Payment::selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, SUM(amount) as total_revenue')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereIn('type', ['rental', 'penalty'])
+            ->groupBy('year', 'month')
+            ->orderBy('year')
+            ->orderBy('month')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'month' => $item->year . '-' . str_pad($item->month, 2, '0', STR_PAD_LEFT),
+                    'revenue' => round($item->total_revenue, 2),
+                ];
+            });
+
+        $months = $monthlyRevenues->pluck('month');
+        $revenues = $monthlyRevenues->pluck('revenue');
+
+        return view('admin.charts.revenues', compact('months', 'revenues'));
+    }
+
 }

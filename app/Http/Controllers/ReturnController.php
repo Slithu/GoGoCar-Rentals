@@ -27,12 +27,45 @@ class ReturnController extends Controller
         return redirect()->route('reservations.index')->with('status', 'Car return successfully processed.');
     }
 
-    public function index(Reservation $reservation, User $user, Car $car) : View {
+    public function index(Request $request) : View
+    {
+        $search = $request->input('search');
+
+        $query = CarReturn::query();
+
+        if ($search) {
+            $searchTerms = explode(' ', $search);
+
+            $query->where(function ($q) use ($searchTerms) {
+                foreach ($searchTerms as $term) {
+                    $q->where(function ($query) use ($term) {
+                        $query->whereHas('reservation', function ($subQuery) use ($term) {
+                            $subQuery->whereHas('user', function ($subSubQuery) use ($term) {
+                                $subSubQuery->where('name', 'like', "%{$term}%")
+                                            ->orWhere('surname', 'like', "%{$term}%")
+                                            ->orWhere('email', 'like', "%{$term}%");
+                            })
+                            ->orWhereHas('car', function ($subSubQuery) use ($term) {
+                                $subSubQuery->where('brand', 'like', "%{$term}%")
+                                            ->orWhere('model', 'like', "%{$term}%");
+                            });
+                        });
+                    });
+                }
+            });
+        }
+
+        $car_returns = $query->paginate(4);
+
+        $reservations = Reservation::all();
+        $users = User::all();
+        $cars = Car::all();
+
         return view('returns.index', [
-            'car_returns' => CarReturn::paginate(4),
-            'reservation' => $reservation,
-            'user' => $user,
-            'car' => $car
+            'car_returns' => $car_returns,
+            'reservations' => $reservations,
+            'users' => $users,
+            'cars' => $cars
         ]);
     }
 
