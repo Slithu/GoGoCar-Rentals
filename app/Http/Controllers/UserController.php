@@ -126,4 +126,19 @@ class UserController extends Controller
 
         return redirect()->route('profile.show')->with('status', 'Profile photo updated!');
     }
+
+    public function removeImage(string $id)
+    {
+        $user = User::find($id);
+
+        if ($user && $user->image_path) {
+            Storage::delete('public/' . $user->image_path);
+
+            $user->image_path = null;
+
+            $user->save();
+        }
+
+        return redirect()->route('profile.show')->with('status', 'Profile photo removed successfully.');
+    }
 }

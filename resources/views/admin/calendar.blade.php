@@ -14,7 +14,7 @@
 <div id="customModal" class="custom-modal">
     <div class="custom-modal-content">
         <span class="custom-modal-close">&times;</span>
-        <h5 id="customModalTitle" class="text-center">Rental Details</h5>
+        <h5 id="customModalTitle" class="text-center"><strong>Rental Details</strong></h5>
         <span><strong>Title:</strong> <span id="modalTitle"></span></span><br>
         <span><strong>Start Date:</strong> <span id="modalStart"></span></span><br>
         <span><strong>Return Date:</strong> <span id="modalEnd"></span></span>
@@ -101,6 +101,7 @@
         padding: 20px;
         border: 1px solid #888;
         width: 45%;
+        border-radius: 8px;
     }
 
     .custom-modal-close {

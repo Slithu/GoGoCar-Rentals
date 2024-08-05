@@ -15,16 +15,25 @@
 
                     @foreach ($users as $user)
                         <div class="mb-4 text-left">
-                            @if ($user->image_path)
-                                <div class="mb-3">
-                                    <img src="{{ asset('storage/' . $user->image_path) }}" alt="Profile Photo" class="img-thumbnail rounded-circle" style="max-width: 150px; max-height: 150px;">
-                                </div>
-                            @else
-                                <img src="{{ asset('images/default-profile.png') }}" alt="Profile Photo" class="img-thumbnail rounded-circle" style="max-width: 150px; max-height: 150px;">
-                            @endif
-                            @if(empty($user->image_path))
-                                <br><br>
-                            @endif
+                            <div class="position-relative d-inline-block">
+                                @if ($user->image_path)
+                                    <img src="{{ asset('storage/' . $user->image_path) }}" alt="Profile Photo" class="img-thumbnail rounded-circle profile-photo" style="max-width: 150px; max-height: 150px;">
+                                    <div class="overlay" onclick="confirmDeleteImage({{ $user->id }})">
+                                        <span>Click to Remove Profile Photo</span>
+                                    </div>
+                                @else
+                                    <form action="{{ route('profile.create') }}" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-link p-0">
+                                            <img src="{{ asset('images/default-profile.png') }}" alt="Profile Photo" class="img-thumbnail rounded-circle" style="max-width: 150px; max-height: 150px;">
+                                            <div class="overlay">
+                                                <span>Click to Add Profile Photo</span>
+                                            </div>
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
+
                             <h5 class="card-title" style="font-size: 1.5rem;">{{ $user->name }} {{ $user->surname }}</h5>
                             <p class="card-text" style="font-size: 1.2rem;">
                                 <strong>Sex:</strong> {{ $user->sex }} <br>
@@ -37,12 +46,10 @@
 
                             <div class="text-center">
                                 <a href="{{ route('users.edit', $user->id) }}" class="btn btn-warning btn-md">Edit Profile</a>
-                                <form method="POST" action="{{ route('profile.create') }}" enctype="multipart/form-data" class="d-inline">
-                                    @csrf
-                                    <button type="submit" class="btn btn-primary btn-md">
-                                        <i class="fas fa-camera"></i>Change Profile Photo
-                                    </button>
-                                </form>
+                                @if (!empty($user->image_path))
+                                    <a href="{{ route('profile.create') }}" class="btn btn-primary btn-md">Change Profile Photo</a>
+                                @endif
+
                                 @can('isUser')
                                 <form action="{{ route('users.destroy', $user->id) }}" class="d-inline delete-form" id="delete-form-{{ $user->id }}">
                                     <button type="button" class="btn btn-danger btn-md" onclick="confirmDelete({{ $user->id }})">Delete Account</button>
@@ -57,6 +64,27 @@
     </div>
 </div>
 
+<!-- Modal for Image Deletion Confirmation -->
+<div id="deleteImageModal" class="custom-modal">
+    <div class="custom-modal-content">
+        <div class="custom-modal-header">
+            <h5 class="custom-modal-title">Confirm Image Deletion</h5>
+            <span class="custom-modal-close" onclick="closeImageModal()">&times;</span>
+        </div>
+        <div class="custom-modal-body">
+            <p>Are you sure you want to delete your profile photo?</p>
+        </div>
+        <div class="custom-modal-footer gap-3">
+            <form id="deleteImageForm" action="{{ route('profile.removeImage', $user->id) }}">
+                <input type="hidden" name="user_id" id="deleteImageUserId" value="">
+                <button type="submit" class="btn btn-danger">Delete Photo</button>
+            </form>
+            <button type="button" class="btn btn-secondary" onclick="closeImageModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Account Deletion Confirmation -->
 <div id="customModal" class="custom-modal">
     <div class="custom-modal-content">
         <div class="custom-modal-header">
@@ -130,13 +158,49 @@
         text-align: center;
         margin: 20px 0;
     }
+
+    .profile-photo {
+        position: relative;
+    }
+
+    .overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: rgba(0, 0, 0, 0.6);
+        color: #fff;
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 0.9rem;
+        padding: 5px;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    .position-relative:hover .overlay {
+        opacity: 1;
+    }
 </style>
 
 <script>
-    let deleteFormId = null;
+    let deleteImageForm = null;
 
-    function confirmDelete(carId) {
-        deleteFormId = 'delete-form-' + carId;
+    function confirmDeleteImage(userId) {
+        document.getElementById('deleteImageUserId').value = userId;
+        document.getElementById('deleteImageModal').style.display = 'block';
+    }
+
+    function closeImageModal() {
+        document.getElementById('deleteImageModal').style.display = 'none';
+    }
+
+    function confirmDelete(userId) {
+        deleteFormId = 'delete-form-' + userId;
         document.getElementById('customModal').style.display = 'block';
     }
 

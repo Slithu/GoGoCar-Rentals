@@ -39,8 +39,9 @@ Route::post('/users/{user}', [UserController::class, 'update'])->name('users.upd
 Route::get('/users/edit/{user}', [UserController::class, 'edit'])->name('users.edit')->middleware('auth');
 
 Route::get('/profile', [UserController::class, 'profile'])->name('profile.show')->middleware('auth');
-Route::post('/profile/create', [UserController::class, 'create'])->name('profile.create')->middleware('auth');
+Route::get('/profile/create', [UserController::class, 'create'])->name('profile.create')->middleware('auth');
 Route::post('/profile', [UserController::class, 'addProfilePhoto'])->name('profile.addProfilePhoto')->middleware('auth');
+Route::get('/profile/{id}/remove-image', [UserController::class, 'removeImage'])->name('profile.removeImage');
 Route::get('/user/notifications', [NotificationController::class, 'user'])->name('profile.notifications')->middleware('auth')->middleware('can:isUser');
 
 Route::get('/cars', [CarController::class, 'index'])->name('cars.index')->middleware('auth')->middleware('can:isAdmin');
