@@ -5,7 +5,7 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header text-center">Editing Profile</div>
+                <div class="card-header text-center bg-primary text-white">Editing Profile</div>
 
                 <div class="card-body">
                     <form method="POST" action="{{ route('users.update', $user->id) }}">
@@ -144,7 +144,12 @@
                             <label for="country" class="col-md-4 col-form-label text-md-end">Country</label>
 
                             <div class="col-md-6">
-                                <input id="country" type="text" class="form-control @error('country') is-invalid @enderror" name="country" value="{{ $user->country }}" required autocomplete="country">
+                                <select id="country" class="form-control @error('country') is-invalid @enderror" name="country" required>
+                                    <option value="" disabled>Select a country</option>
+                                    @foreach (config('countries') as $code => $name)
+                                        <option value="{{ $code }}" {{ old('country', $user->country) == $code ? 'selected' : '' }}>{{ $name }}</option>
+                                    @endforeach
+                                </select>
 
                                 @error('country')
                                     <span class="invalid-feedback" role="alert">

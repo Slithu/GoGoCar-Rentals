@@ -28,7 +28,7 @@ class UserSeeder extends Seeder
             'birth' => '1999-12-31',
             'town' => 'Warszawa',
             'zip_code' => '00-000',
-            'country' => 'Polska',
+            'country' => 'Poland',
             'password' => Hash::make('admin123'),
         ]);
 
@@ -44,7 +44,7 @@ class UserSeeder extends Seeder
             'birth' => '1990-05-24',
             'town' => 'Poznań',
             'zip_code' => '60-001',
-            'country' => 'Polska',
+            'country' => 'Poland',
             'password' => Hash::make('haslo123'),
         ]);
 
@@ -60,7 +60,7 @@ class UserSeeder extends Seeder
             'birth' => '1996-02-20',
             'town' => 'Wrocław',
             'zip_code' => '50-010',
-            'country' => 'Polska',
+            'country' => 'Poland',
             'password' => Hash::make('haslo123'),
         ]);
 
@@ -76,7 +76,7 @@ class UserSeeder extends Seeder
             'birth' => '1980-11-06',
             'town' => 'Gdańsk',
             'zip_code' => '80-022',
-            'country' => 'Polska',
+            'country' => 'Poland',
             'password' => Hash::make('haslo123'),
         ]);
 
@@ -92,7 +92,7 @@ class UserSeeder extends Seeder
             'birth' => '1990-06-12',
             'town' => 'Kraków',
             'zip_code' => '30-262',
-            'country' => 'Polska',
+            'country' => 'Poland',
             'password' => Hash::make('haslo123'),
         ]);
 
@@ -108,7 +108,7 @@ class UserSeeder extends Seeder
             'birth' => '1985-04-22',
             'town' => 'Zabrze',
             'zip_code' => '41-723',
-            'country' => 'Polska',
+            'country' => 'Poland',
             'password' => Hash::make('haslo123'),
         ]);
 
@@ -124,7 +124,7 @@ class UserSeeder extends Seeder
             'birth' => '1982-11-13',
             'town' => 'Lublin',
             'zip_code' => '20-432',
-            'country' => 'Polska',
+            'country' => 'Poland',
             'password' => Hash::make('haslo123'),
         ]);
 
@@ -140,7 +140,23 @@ class UserSeeder extends Seeder
             'birth' => '1991-05-30',
             'town' => 'Lubln',
             'zip_code' => '59-337',
-            'country' => 'Polska',
+            'country' => 'Poland',
+            'password' => Hash::make('haslo123'),
+        ]);
+
+        DB::table('users')->insert([
+            'name' => 'Karol',
+            'surname' => 'Krawczyk',
+            'sex' => 'Male',
+            'image_path' => '',
+            'role' => 'user',
+            'email' => 'karolkrawczyk@gmail.com',
+            'phone' => '567356245',
+            'license' => '34453/53/2452',
+            'birth' => '1955-12-12',
+            'town' => 'Szczebrzeszyn',
+            'zip_code' => '22-460',
+            'country' => 'Poland',
             'password' => Hash::make('haslo123'),
         ]);
     }

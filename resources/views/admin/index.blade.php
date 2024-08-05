@@ -76,6 +76,19 @@
                 </div>
 
                 <div class="card-header text-center">
+                    <p class="card-title mb-0"><strong>Rentals Calendar</strong></p>
+                </div>
+                <div class="card-body text-center">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <a href="{{ route('admin.calendar') }}" class="btn btn-primary btn-block">
+                                Rentals Calendar
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="card-header text-center">
                     <p class="card-title mb-0"><strong>Charts</strong></p>
                 </div>
                 <div class="card-body text-center">

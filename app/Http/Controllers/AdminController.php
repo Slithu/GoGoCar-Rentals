@@ -395,4 +395,11 @@ class AdminController extends Controller
         return view('admin.charts.revenues', compact('months', 'revenues'));
     }
 
+    public function calendar()
+    {
+        return view('admin.calendar', [
+            'cars' => Car::all(),
+            'reservations' => Reservation::all(),
+        ]);
+    }
 }

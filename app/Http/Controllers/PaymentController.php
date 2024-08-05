@@ -132,7 +132,7 @@ class PaymentController extends Controller
                 'user_id' => $user->id,
                 'title' => "New penalty payment completed!",
                 'message' => "{$payment->user->name} {$payment->user->surname}\nAmount: {$payment->amount}\nCurrency: {$payment->currency}",
-                'type' => 'penlaty',
+                'type' => 'penalty',
                 'status' => 'unread',
             ]);
 

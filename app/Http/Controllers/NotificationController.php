@@ -9,12 +9,20 @@ use Illuminate\Support\Facades\Auth;
 
 class NotificationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $notifications = AdminNotification::paginate(5);
+        $type = $request->input('type');
+        $query = AdminNotification::query();
+
+        if ($type) {
+            $query->where('type', $type);
+        }
+
+        $notifications = $query->paginate(5)->appends(['type' => $type]);
 
         return view('admin.notifications', [
             'notifications' => $notifications,
+            'currentType' => $type
         ]);
     }
 
@@ -48,12 +56,20 @@ class NotificationController extends Controller
         return redirect(route('admin.notifications'))->with('status', 'Notification deleted!');
     }
 
-    public function user()
+    public function user(Request $request)
     {
-        $notifications = UserNotification::where('user_id', Auth::id())->paginate(5);
+        $type = $request->input('type');
+        $query = UserNotification::where('user_id', Auth::id());
+
+        if ($type) {
+            $query->where('type', $type);
+        }
+
+        $notifications = $query->paginate(5)->appends(['type' => $type]);
 
         return view('profile.notifications', [
             'notifications' => $notifications,
+            'currentType' => $type,
         ]);
     }
 }

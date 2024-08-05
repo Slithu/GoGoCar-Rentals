@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="container mt-3">
-        <h1 class="text-center">Monthly Revenue Chart (From Payments)</h1>
+        <h1 class="text-center">Monthly Revenue Chart</h1>
 
         <div class="row mt-4">
             <div class="col-md-12 mb-4">

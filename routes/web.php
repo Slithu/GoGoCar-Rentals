@@ -34,14 +34,14 @@ Auth::routes();
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
 Route::get('/users/list', [UserController::class, 'index'])->name('users.index')->middleware('auth')->middleware('can:isAdmin');
-Route::get("users/{id}/delete", [UserController::class, 'destroy'])->name('users.destroy')->middleware('auth')->middleware('can:isAdmin');
+Route::get("users/{id}/delete", [UserController::class, 'destroy'])->name('users.destroy')->middleware('auth');
 Route::post('/users/{user}', [UserController::class, 'update'])->name('users.update')->middleware('auth');
 Route::get('/users/edit/{user}', [UserController::class, 'edit'])->name('users.edit')->middleware('auth');
 
 Route::get('/profile', [UserController::class, 'profile'])->name('profile.show')->middleware('auth');
 Route::post('/profile/create', [UserController::class, 'create'])->name('profile.create')->middleware('auth');
 Route::post('/profile', [UserController::class, 'addProfilePhoto'])->name('profile.addProfilePhoto')->middleware('auth');
-Route::get('/user/notifications', [NotificationController::class, 'user'])->name('profile.notifications')->middleware('auth')->middleware('isUser');
+Route::get('/user/notifications', [NotificationController::class, 'user'])->name('profile.notifications')->middleware('auth')->middleware('can:isUser');
 
 Route::get('/cars', [CarController::class, 'index'])->name('cars.index')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/cars/create', [CarController::class, 'create'])->name('cars.create')->middleware('can:isAdmin');
@@ -92,10 +92,11 @@ Route::get('/admin/charts/reviews', [AdminController::class, 'reviewsChart'])->n
 Route::get('/admin/charts/average_reviews', [AdminController::class, 'averageReviewsChart'])->name('admin.charts.average_reviews')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/admin/charts/revenues', [AdminController::class, 'revenuesChart'])->name('admin.charts.revenues')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/admin/notifications', [NotificationController::class, 'index'])->name('admin.notifications')->middleware('auth')->middleware('can:isAdmin');
-Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead')->middleware('auth')->middleware('isUser');
-Route::post('/notifications/{id}/read2', [NotificationController::class, 'markAsRead2'])->name('notifications.markAsRead2')->middleware('auth')->middleware('isAdmin');
-Route::get('/notifications/{notification}/delete', [NotificationController::class, 'destroy'])->name('notifications.destroy')->middleware('auth')->middleware('isUser');
-Route::get('/notifications/{notification}/delete2', [NotificationController::class, 'destroy2'])->name('notifications.destroy2')->middleware('auth')->middleware('isAdmin');
+Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead')->middleware('auth')->middleware('can:isUser');
+Route::post('/notifications/{id}/read2', [NotificationController::class, 'markAsRead2'])->name('notifications.markAsRead2')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/notifications/{notification}/delete', [NotificationController::class, 'destroy'])->name('notifications.destroy')->middleware('auth')->middleware('can:isUser');
+Route::get('/notifications/{notification}/delete2', [NotificationController::class, 'destroy2'])->name('notifications.destroy2')->middleware('auth')->middleware('can:isAdmin');
+Route::get('/admin/rentals/calendar', [AdminController::class, 'calendar'])->name('admin.calendar')->middleware('auth')->middleware('can:isAdmin');
 
 Route::get('/payments/details/{reservation}', [PaymentController::class, 'showPaymentForm'])->name('payment.payment')->middleware('auth');
 Route::post('/payments/process', [PaymentController::class, 'processPayment'])->name('payment.process')->middleware('auth');

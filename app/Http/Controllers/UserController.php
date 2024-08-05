@@ -126,5 +126,4 @@ class UserController extends Controller
 
         return redirect()->route('profile.show')->with('status', 'Profile photo updated!');
     }
-
 }
