@@ -60,7 +60,7 @@
                             <label for="start_date" class="col-md-4 col-form-label text-md-end">Rental Date</label>
 
                             <div class="col-md-6">
-                                <input id="start_date" type="datetime-local" class="form-control @error('start_date') is-invalid @enderror" name="start_date" value="{{ old('start_date') }}" required autocomplete="start_date">
+                                <input id="start_date" type="text" class="form-control @error('start_date') is-invalid @enderror" name="start_date" value="{{ old('start_date') }}" required autocomplete="start_date">
 
                                 @error('start_date')
                                     <span class="invalid-feedback" role="alert">
@@ -74,7 +74,7 @@
                             <label for="end_date" class="col-md-4 col-form-label text-md-end">Date of Return</label>
 
                             <div class="col-md-6">
-                                <input id="end_date" type="datetime-local" class="form-control @error('end_date') is-invalid @enderror" name="end_date" value="{{ old('end_date') }}" required autocomplete="end_date">
+                                <input id="end_date" type="text" class="form-control @error('end_date') is-invalid @enderror" name="end_date" value="{{ old('end_date') }}" required autocomplete="end_date">
 
                                 @error('end_date')
                                     <span class="invalid-feedback" role="alert">
@@ -134,6 +134,20 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        flatpickr("#start_date", {
+            enableTime: true,
+            minuteIncrement: 30,
+            dateFormat: "Y-m-d H:i",
+            time_24hr: true
+        });
+
+        flatpickr("#end_date", {
+            enableTime: true,
+            minuteIncrement: 30,
+            dateFormat: "Y-m-d H:i",
+            time_24hr: true
+        });
+
         const startDateInput = document.getElementById('start_date');
         const endDateInput = document.getElementById('end_date');
         const totalPriceInput = document.getElementById('total_price');

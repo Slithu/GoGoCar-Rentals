@@ -20,6 +20,7 @@ use Stripe\Stripe;
 use Stripe\Charge;
 use Illuminate\Support\Facades\Log;
 use App\Mail\RentalMail;
+use App\Mail\RentalCancelledMail;
 use App\Models\AdminNotification;
 use Illuminate\Support\Facades\Mail;
 
@@ -92,7 +93,7 @@ class ReservationController extends Controller
         $startDate = new \DateTime($validatedData['start_date']);
         $endDate = new \DateTime($validatedData['end_date']);
 
-        // Walidacja dat
+        // Walidacja, czy data zakończenia jest późniejsza niż data rozpoczęcia
         if ($endDate <= $startDate) {
             return back()->withErrors(['end_date' => 'End date must be later than start date.']);
         }
@@ -106,22 +107,25 @@ class ReservationController extends Controller
         if ($lastReturnDate) {
             $endDateTime = new \DateTime($lastReturnDate->end_date);
             $minStartDate = $endDateTime->modify('+3 hours');
-
-            if ($startDate < $minStartDate) {
-                return back()->withErrors(['start_date' => 'Car can only be rented again after 3 hours from the last return date.']);
-            }
         } else {
-            $minStartDate = now();
+            $minStartDate = new \DateTime();
+        }
+
+        // Dodanie walidacji dla minimum 1 godziny od teraz, jeśli nie było wcześniejszej rezerwacji
+        if ($minStartDate <= new \DateTime()) {
+            $minStartDate = (new \DateTime())->modify('+3 hour');
         }
 
         if ($startDate < $minStartDate) {
-            return back()->withErrors(['start_date' => 'Start date must be at least 3 hours from now.']);
+            return back()->withErrors(['start_date' => 'Start date must be at least 1 hour from now.']);
         }
 
-        if ($endDate < now()) {
+        // Walidacja, czy data zakończenia nie jest w przeszłości
+        if ($endDate < new \DateTime()) {
             return back()->withErrors(['end_date' => 'End date cannot be in the past.']);
         }
 
+        // Walidacja, czy czas wynajmu jest co najmniej 1 godzina
         $diffTimeInSeconds = $endDate->getTimestamp() - $startDate->getTimestamp();
         $diffHours = $diffTimeInSeconds / 3600;
 
@@ -129,6 +133,7 @@ class ReservationController extends Controller
             return back()->withErrors(['end_date' => 'Minimum rental time is 1 hour.']);
         }
 
+        // Sprawdzanie, czy samochód jest dostępny w wybranym zakresie dat
         $checkStartDate = clone $startDate;
         $checkStartDate->modify('-2 hours');
 
@@ -139,10 +144,6 @@ class ReservationController extends Controller
                     ->orWhere(function ($query) use ($checkStartDate, $endDate) {
                         $query->where('start_date', '<', $checkStartDate)
                             ->where('end_date', '>', $endDate);
-                    })
-                    ->orWhere(function ($query) use ($startDate, $endDate) {
-                        $query->where('start_date', '=', $startDate)
-                            ->where('end_date', '=', $endDate);
                     });
             })
             ->get();
@@ -151,9 +152,11 @@ class ReservationController extends Controller
             return back()->withErrors(['car_id' => 'This car is not available in the selected date range.']);
         }
 
+        // Obliczanie całkowitego kosztu
         $diffDays = ceil($diffTimeInSeconds / (60 * 60 * 24));
         $totalPrice = $diffDays * $car->price;
 
+        // Tworzenie nowej rezerwacji
         $reservation = new Reservation([
             'user_id' => $validatedData['user_id'],
             'car_id' => $validatedData['car_id'],
@@ -165,6 +168,7 @@ class ReservationController extends Controller
 
         $reservation->save();
 
+        // Tworzenie powiadomień dla użytkownika i administratora
         UserNotification::create([
             'user_id' => $user->id,
             'title' => "New rental completed!",
@@ -181,9 +185,11 @@ class ReservationController extends Controller
             'status' => 'unread',
         ]);
 
+        // Wysyłanie e-maila do użytkownika
         $user = User::findOrFail($reservation->user_id);
         Mail::to($user->email)->send(new RentalMail($reservation));
 
+        // Aktualizacja dostępności samochodów
         Artisan::call('update:car-availability');
 
         return redirect()->route('payment.payment', ['reservation' => $reservation->id])->with('status', 'Reservation stored successfully!');
@@ -220,43 +226,10 @@ class ReservationController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    /*
-    public function update(StoreReservationRequest $request, Reservation $reservation) : RedirectResponse
-    {
-        $reservation->fill($request->validated());
-        $reservation->save();
-
-        $user = Auth::user();
-        $car = Car::findOrFail($reservation['car_id']);
-
-        $startDate = new \DateTime($reservation['start_date']);
-        $endDate = new \DateTime($reservation['end_date']);
-        $diffTime = $endDate->getTimestamp() - $startDate->getTimestamp();
-        $diffDays = ceil($diffTime / (60 * 60 * 24));
-
-        $totalPrice = $diffDays * $car->price;
-
-        $reservation = new Reservation([
-            'user_id' => $reservation['user_id'],
-            'car_id' => $reservation['car_id'],
-            'start_date' => $reservation['start_date'],
-            'end_date' => $reservation['end_date'],
-            'total_price' => $totalPrice,
-            'status' => $reservation['status']
-        ]);
-
-        $reservation->save();
-
-        if ($user->role === UserRole::USER) {
-            return redirect()->route('reservations.session')->with('status', 'Reservation updated!');
-        }
-
-        return redirect(route('reservations.index'))->with('status', 'Reservation updated!');
-    }
-    */
     public function update(StoreReservationRequest $request, Reservation $reservation): RedirectResponse
     {
         $validatedData = $request->validated();
+        $user = Auth::user();
 
         try {
             $car = Car::findOrFail($validatedData['car_id']);
@@ -266,13 +239,42 @@ class ReservationController extends Controller
             $diffDays = ceil($diffTime / (60 * 60 * 24));
             $totalPrice = $diffDays * $car->price;
 
+            // Sprawdź, czy status zmienia się na 'cancelled'
+            $oldStatus = $reservation->status;
+            $newStatus = $validatedData['status'];
+
             $reservation->start_date = $validatedData['start_date'];
             $reservation->end_date = $validatedData['end_date'];
             $reservation->car_id = $validatedData['car_id'];
             $reservation->total_price = $totalPrice;
-            $reservation->status = $validatedData['status'];
+            $reservation->status = $newStatus;
 
             $reservation->save();
+
+            // Powiadomienie dla administratora tylko jeśli status zmienia się na 'cancelled'
+            if ($oldStatus !== 'cancelled' && $newStatus === 'cancelled') {
+                $formattedStartDate = (new \DateTime($reservation->start_date))->format('Y-m-d H:i:s');
+                $formattedEndDate = (new \DateTime($reservation->end_date))->format('Y-m-d H:i:s');
+
+                UserNotification::create([
+                    'user_id' => $user->id,
+                    'title' => "Rental cancelled!",
+                    'message' => "{$reservation->user->name} {$reservation->user->surname}\nCar: {$reservation->car->brand} {$reservation->car->model}\nRental Date: {$formattedStartDate} --- {$formattedEndDate}\nTotal Price: {$reservation->total_price} PLN\n\nThe reservation has been cancelled.",
+                    'type' => 'rental',
+                    'status' => 'unread',
+                ]);
+
+                AdminNotification::create([
+                    'user_id' => 1,
+                    'title' => "Rental cancelled!",
+                    'message' => "Reservation ID: {$reservation->id}\nUser ID: {$reservation->user->id}\nUser: {$reservation->user->name} {$reservation->user->surname}\nCar ID: {$reservation->car->id}\nCar: {$reservation->car->brand} {$reservation->car->model}\nRental Date: {$formattedStartDate} --- {$formattedEndDate}\nTotal Price: {$reservation->total_price} PLN\n\nThe reservation has been cancelled.",
+                    'type' => 'rental',
+                    'status' => 'unread',
+                ]);
+
+                $user = User::findOrFail($reservation->user_id);
+                Mail::to($user->email)->send(new RentalCancelledMail($reservation));
+            }
 
             Artisan::call('update:car-availability');
 

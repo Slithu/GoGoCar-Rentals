@@ -25,10 +25,12 @@
                                         <a href="{{ route('reservations.show', $reservation->id) }}">
                                             <button class="btn btn-success">Show</button>
                                         </a>
-                                        <a href="{{ route('reservations.edit', $reservation->id) }}">
-                                            <button class="btn btn-info">Edit</button>
-                                        </a>
-                                        @if ($reservation->end_date < now()->addHours(1) && !$reservation->review)
+                                        @if ($reservation->end_date > now()->addHours(2))
+                                            <a href="{{ route('reservations.edit', $reservation->id) }}">
+                                                <button class="btn btn-info">Edit</button>
+                                            </a>
+                                        @endif
+                                        @if ($reservation->end_date < now()->addHours(2) && !$reservation->review)
                                             <a href="{{ route('reservations.rate', $reservation->id) }}">
                                                 <button class="btn btn-primary">Rate</button>
                                             </a>

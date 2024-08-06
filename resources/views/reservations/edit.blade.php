@@ -110,13 +110,26 @@
                         <div class="row mb-3">
                             <label for="status" class="col-md-4 col-form-label text-md-end">Status</label>
                             <div class="col-md-6">
-                                <select class="form-control" id="status" name="status" required>
-                                    @can('isAdmin')
-                                        <option value="pending" @if(old('status', $reservations->status) === 'pending') selected @endif>Pending</option>
-                                        <option value="confirmed" @if(old('status', $reservations->status) === 'confirmed') selected @endif>Confirmed</option>
-                                    @endcan
-                                    <option value="cancelled" @if(old('status', $reservations->status) === 'cancelled') selected @endif>Cancelled</option>
-                                </select>
+                                @can('isUser')
+                                    <select class="form-control" id="status" name="status" required>
+                                        @if ($reservations->status === 'cancelled')
+                                            <option value="cancelled" @if(old('status', $reservations->status) === 'cancelled') selected @endif>Cancelled</option>
+                                        @elseif ($reservations->status === 'confirmed')
+                                            <option value="confirmed" @if(old('status', $reservations->status) === 'confirmed') selected @endif>Confirmed</option>
+                                            <option value="cancelled" @if(old('status', $reservations->status) === 'cancelled') selected @endif>Cancelled</option>
+                                        @else
+                                            <option value="pending" @if(old('status', $reservations->status) === 'pending') selected @endif>Pending</option>
+                                            <option value="cancelled" @if(old('status', $reservations->status) === 'cancelled') selected @endif>Cancelled</option>
+                                        @endif
+                                    </select>
+                                @endcan
+                                @can('isAdmin')
+                                    <select class="form-control" id="status" name="status" required>
+                                            <option value="pending" @if(old('status', $reservations->status) === 'pending') selected @endif>Pending</option>
+                                            <option value="confirmed" @if(old('status', $reservations->status) === 'confirmed') selected @endif>Confirmed</option>
+                                        <option value="cancelled" @if(old('status', $reservations->status) === 'cancelled') selected @endif>Cancelled</option>
+                                    </select>
+                                @endcan
 
                                 @error('status')
                                 <span class="invalid-feedback" role="alert">
@@ -166,10 +179,8 @@
             }
         }
 
-        // Initial calculation
         calculateTotalPrice();
 
-        // Event listeners for date changes
         startDateInput.addEventListener('change', calculateTotalPrice);
         endDateInput.addEventListener('change', calculateTotalPrice);
     });

@@ -7,6 +7,7 @@ use Database\Seeders\UserSeeder;
 use Database\Seeders\CarSeeder;
 use Database\Seeders\ReservationSeeder;
 use Database\Seeders\ReviewSeeder;
+use Database\Seeders\PaymentSeeder;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -30,6 +31,7 @@ class DatabaseSeeder extends Seeder
             CarSeeder::class,
             ReservationSeeder::class,
             ReviewSeeder::class,
+            PaymentSeeder::class,
         ]);
     }
 }
