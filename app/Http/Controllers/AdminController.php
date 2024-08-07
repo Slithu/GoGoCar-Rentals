@@ -134,8 +134,8 @@ class AdminController extends Controller
 
     public function usersChart()
     {
-        $startDate = now()->startOfYear();
-        $endDate = now();
+        $startDate = now()->addHour(2)->startOfYear();
+        $endDate = now()->addHour(2);
 
         $monthlyUserCounts = User::selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as count')
             ->whereBetween('created_at', [$startDate, $endDate])
@@ -173,7 +173,6 @@ class AdminController extends Controller
         $ageCounts = array_fill_keys(array_keys($ageRanges), 0);
 
         foreach (User::all() as $user) {
-            // Konwertuj string na obiekt Carbon
             $birthDate = Carbon::parse($user->birth);
             $age = $now - $birthDate->year;
 
@@ -208,8 +207,8 @@ class AdminController extends Controller
 
     public function carsChart()
     {
-        $startDate = now()->startOfYear();
-        $endDate = now();
+        $startDate = now()->addHour(2)->startOfYear();
+        $endDate = now()->addHour(2);
 
         $monthlyCarCounts = Car::selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as count')
             ->whereBetween('created_at', [$startDate, $endDate])
@@ -232,8 +231,8 @@ class AdminController extends Controller
 
     public function rentalsChart()
     {
-        $startDate = now()->startOfYear();
-        $endDate = now();
+        $startDate = now()->addHour(2)->startOfYear();
+        $endDate = now()->addHour(2);
 
         $monthlyRentalCounts = Reservation::selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as count')
             ->whereBetween('start_date', [$startDate, $endDate])
@@ -324,8 +323,8 @@ class AdminController extends Controller
 
     public function reviewsChart()
     {
-        $startDate = now()->startOfYear();
-        $endDate = now();
+        $startDate = now()->addHour(2)->startOfYear();
+        $endDate = now()->addHour(2);
 
         $monthlyReviewCounts = Review::selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as count')
             ->whereBetween('created_at', [$startDate, $endDate])
@@ -372,8 +371,8 @@ class AdminController extends Controller
 
     public function revenuesChart()
     {
-        $startDate = now()->startOfYear();
-        $endDate = now();
+        $startDate = now()->addHour(2)->startOfYear();
+        $endDate = now()->addHour(2);
 
         $monthlyRevenues = Payment::selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, SUM(amount) as total_revenue')
             ->whereBetween('created_at', [$startDate, $endDate])

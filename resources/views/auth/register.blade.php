@@ -44,6 +44,7 @@
 
                             <div class="col-md-6">
                                 <select id="sex" class="form-control @error('sex') is-invalid @enderror" name="sex" required>
+                                    <option value="" disabled selected>Select a sex</option>
                                     <option value="male" {{ old('sex') == 'male' ? 'selected' : '' }}>Male</option>
                                     <option value="female" {{ old('sex') == 'female' ? 'selected' : '' }}>Female</option>
                                 </select>

@@ -2,13 +2,14 @@
 
 namespace Database\Seeders;
 
-use App\Models\Car;
 use Database\Seeders\UserSeeder;
 use Database\Seeders\CarSeeder;
 use Database\Seeders\ReservationSeeder;
 use Database\Seeders\ReviewSeeder;
 use Database\Seeders\PaymentSeeder;
-use App\Models\User;
+use Database\Seeders\CarReturnSeeder;
+use Database\Seeders\AdminNotificationSeeder;
+use Database\Seeders\UserNotificationSeeder;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -32,6 +33,9 @@ class DatabaseSeeder extends Seeder
             ReservationSeeder::class,
             ReviewSeeder::class,
             PaymentSeeder::class,
+            CarReturnSeeder::class,
+            AdminNotificationSeeder::class,
+            UserNotificationSeeder::class,
         ]);
     }
 }

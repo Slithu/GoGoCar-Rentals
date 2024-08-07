@@ -32,7 +32,7 @@ class UpdateCarAvailability extends Command
 
         foreach ($cars as $car) {
             $isBooked = Reservation::where('car_id', $car->id)
-                ->where('end_date', '>', now())
+                ->where('end_date', '>', now()->addHour(2))
                 ->exists();
 
             CarAvailability::updateOrCreate(

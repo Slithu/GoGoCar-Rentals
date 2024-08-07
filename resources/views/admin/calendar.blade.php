@@ -59,6 +59,32 @@
             },
             initialView: 'dayGridMonth',
             events: window.reservations || [],
+            eventContent: function(info) {
+                var startTime = info.event.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                var endTime = info.event.end ? info.event.end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                var title = info.event.title;
+
+                var container = document.createElement('div');
+                container.classList.add('fc-event-title-container');
+
+                var startElem = document.createElement('span');
+                startElem.classList.add('event-start-time');
+                startElem.textContent = startTime;
+
+                var titleElem = document.createElement('span');
+                titleElem.classList.add('event-title');
+                titleElem.textContent = title;
+
+                var endElem = document.createElement('span');
+                endElem.classList.add('event-end-time');
+                endElem.textContent = endTime;
+
+                container.appendChild(startElem);
+                container.appendChild(titleElem);
+                container.appendChild(endElem);
+
+                return { domNodes: [container] };
+            },
             eventClick: function(info) {
                 document.getElementById('modalTitle').innerText = info.event.title;
                 document.getElementById('modalStart').innerText = info.event.start.toLocaleString();
@@ -116,6 +142,32 @@
         color: black;
         text-decoration: none;
         cursor: pointer;
+    }
+
+    .fc-event-title-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    }
+
+    .event-start-time {
+        font-weight: bold;
+        flex: 0 0 auto;
+        margin-right: 10px;
+        margin-left: 5px;
+    }
+
+    .event-title {
+        flex-grow: 1;
+        text-align: center;
+    }
+
+    .event-end-time {
+        font-weight: bold;
+        flex: 0 0 auto;
+        margin-left: 10px;
+        margin-right: 5px;
     }
 </style>
 @endsection

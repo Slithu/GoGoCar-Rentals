@@ -12,16 +12,16 @@
 
             <div class="card text-center">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Rate This Car</h5>
+                    <p class="mb-0">Rate This Car</p>
                 </div>
                 <div class="card-body text-center">
                     @if(isset($reservation) && isset($car))
                         <div class="row mb-4">
                             <div class="col-md-12">
-                                <p><strong>Car:</strong> {{ $car->brand }} {{ $car->model }}</p>
-                                <p><strong>Start Date:</strong> {{ $reservation->start_date }}</p>
-                                <p><strong>End Date:</strong> {{ $reservation->end_date }}</p>
-                                <p><strong>Total Price:</strong> {{ $reservation->total_price }} PLN</p>
+                                <span><strong>Car:</strong> {{ $car->brand }} {{ $car->model }}</span><br>
+                                <span><strong>Start Date:</strong> {{ $reservation->start_date }}</span><br>
+                                <span><strong>End Date:</strong> {{ $reservation->end_date }}</span><br>
+                                <span><strong>Total Price:</strong> {{ $reservation->total_price }} PLN</span>
                             </div>
                         </div>
 
@@ -100,7 +100,7 @@
 
 <style>
     .form-group, .card-body {
-        font-size: 1.1rem;
+        font-size: 1rem;
     }
     #comment {
         font-size: 1rem;

@@ -14,17 +14,16 @@
                             <option value="rental" {{ request('type') === 'rental' ? 'selected' : '' }}>Rental</option>
                             <option value="payment" {{ request('type') === 'payment' ? 'selected' : '' }}>Payment</option>
                             <option value="penalty" {{ request('type') === 'penalty' ? 'selected' : '' }}>Penalty Payment</option>
+                            <option value="cancellation" {{ request('type') === 'cancellation' ? 'selected' : '' }}>Rental Cancellation</option>
                         </select>
                         <button type="submit" class="btn btn-primary">Filter</button>
                     </form>
                 </div>
             </div>
-
             @if ($notifications->isEmpty())
                 <br>
                 <h4 class="text-center">No notifications yet.</h4>
             @else
-
             @foreach ($notifications as $notification)
                 <div class="alert alert-info">
                     <div class="d-flex justify-content-between align-items-center">
@@ -33,8 +32,10 @@
                                 <span class="badge text-bg-primary">Rental</span>
                             @elseif ($notification->type === 'payment')
                                 <span class="badge text-bg-primary">Payment</span>
-                            @else
+                            @elseif ($notification->type === 'penalty')
                                 <span class="badge text-bg-primary">Penalty Payment</span>
+                            @else
+                                <span class="badge text-bg-primary">Rental Cancellation</span>
                             @endif
                             <strong>{{ $notification->title }}</strong>
                             <div>
@@ -45,6 +46,8 @@
                             @unless ($notification->status === 'read')
                                 <form action="{{ route('notifications.markAsRead', $notification->id) }}" method="POST" class="d-inline">
                                     @csrf
+                                    <input type="hidden" name="type" value="{{ request('type') }}">
+                                    <input type="hidden" name="page" value="{{ request('page', 1) }}">
                                     <button type="submit" class="btn btn-primary btn-sm">Mark as Read</button>
                                 </form>
                             @endunless
@@ -64,13 +67,7 @@
                             </h2>
                             <div id="collapse{{ $notification->id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ $notification->id }}" data-bs-parent="#accordion{{ $notification->id }}">
                                 <div class="accordion-body">
-                                    @if ($notification->type === 'rental')
-                                        {!! nl2br(e($notification->message)) !!}
-                                    @elseif ($notification->type === 'payment')
-                                        {!! nl2br(e($notification->message)) !!}
-                                    @else
-                                        {!! nl2br(e($notification->message)) !!}
-                                    @endif
+                                    {!! nl2br(e($notification->message)) !!}
                                 </div>
                             </div>
                         </div>
@@ -81,7 +78,7 @@
         </div>
     </div>
     <div class="position-fixed bottom-0 start-50 translate-middle-x">
-        {{ $notifications->links() }}
+        {{ $notifications->appends(request()->query())->links() }}
     </div>
 </div>
 

@@ -18,7 +18,7 @@ class NotificationController extends Controller
             $query->where('type', $type);
         }
 
-        $notifications = $query->paginate(5)->appends(['type' => $type]);
+        $notifications = $query->paginate(6)->appends($request->all());
 
         return view('admin.notifications', [
             'notifications' => $notifications,
@@ -26,20 +26,24 @@ class NotificationController extends Controller
         ]);
     }
 
-    public function markAsRead($id)
-    {
-        $notification = UserNotification::findOrFail($id);
-        $notification->update(['status' => 'read']);
-
-        return redirect()->route('profile.notifications');
-    }
-
-    public function markAsRead2($id)
+    public function markAsRead2(Request $request, $id)
     {
         $notification = AdminNotification::findOrFail($id);
         $notification->update(['status' => 'read']);
+        $type = $request->input('type');
+        $page = $request->input('page', 1);
 
-        return redirect()->route('admin.notifications');
+        return redirect()->route('admin.notifications', ['type' => $type, 'page' => $page]);
+    }
+
+    public function markAsRead(Request $request, $id)
+    {
+        $notification = UserNotification::findOrFail($id);
+        $notification->update(['status' => 'read']);
+        $type = $request->input('type');
+        $page = $request->input('page', 1);
+
+        return redirect()->route('profile.notifications', ['type' => $type, 'page' => $page]);
     }
 
     public function destroy(UserNotification $notification)
@@ -65,7 +69,7 @@ class NotificationController extends Controller
             $query->where('type', $type);
         }
 
-        $notifications = $query->paginate(5)->appends(['type' => $type]);
+        $notifications = $query->paginate(6)->appends($request->all());
 
         return view('profile.notifications', [
             'notifications' => $notifications,

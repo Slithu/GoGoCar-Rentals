@@ -229,7 +229,6 @@ class ReservationController extends Controller
     public function update(StoreReservationRequest $request, Reservation $reservation): RedirectResponse
     {
         $validatedData = $request->validated();
-        $user = Auth::user();
 
         try {
             $car = Car::findOrFail($validatedData['car_id']);
@@ -239,50 +238,18 @@ class ReservationController extends Controller
             $diffDays = ceil($diffTime / (60 * 60 * 24));
             $totalPrice = $diffDays * $car->price;
 
-            // Sprawdź, czy status zmienia się na 'cancelled'
-            $oldStatus = $reservation->status;
-            $newStatus = $validatedData['status'];
-
             $reservation->start_date = $validatedData['start_date'];
             $reservation->end_date = $validatedData['end_date'];
             $reservation->car_id = $validatedData['car_id'];
             $reservation->total_price = $totalPrice;
-            $reservation->status = $newStatus;
+            $reservation->status = $validatedData['status'];
 
             $reservation->save();
 
-            // Powiadomienie dla administratora tylko jeśli status zmienia się na 'cancelled'
-            if ($oldStatus !== 'cancelled' && $newStatus === 'cancelled') {
-                $formattedStartDate = (new \DateTime($reservation->start_date))->format('Y-m-d H:i:s');
-                $formattedEndDate = (new \DateTime($reservation->end_date))->format('Y-m-d H:i:s');
-
-                UserNotification::create([
-                    'user_id' => $user->id,
-                    'title' => "Rental cancelled!",
-                    'message' => "{$reservation->user->name} {$reservation->user->surname}\nCar: {$reservation->car->brand} {$reservation->car->model}\nRental Date: {$formattedStartDate} --- {$formattedEndDate}\nTotal Price: {$reservation->total_price} PLN\n\nThe reservation has been cancelled.",
-                    'type' => 'rental',
-                    'status' => 'unread',
-                ]);
-
-                AdminNotification::create([
-                    'user_id' => 1,
-                    'title' => "Rental cancelled!",
-                    'message' => "Reservation ID: {$reservation->id}\nUser ID: {$reservation->user->id}\nUser: {$reservation->user->name} {$reservation->user->surname}\nCar ID: {$reservation->car->id}\nCar: {$reservation->car->brand} {$reservation->car->model}\nRental Date: {$formattedStartDate} --- {$formattedEndDate}\nTotal Price: {$reservation->total_price} PLN\n\nThe reservation has been cancelled.",
-                    'type' => 'rental',
-                    'status' => 'unread',
-                ]);
-
-                $user = User::findOrFail($reservation->user_id);
-                Mail::to($user->email)->send(new RentalCancelledMail($reservation));
-            }
-
             Artisan::call('update:car-availability');
 
-            if (auth()->user()->role === 'admin') {
-                return redirect()->route('reservations.index')->with('status', 'Reservation updated!');
-            } else {
-                return redirect()->route('reservations.session')->with('status', 'Reservation updated!');
-            }
+            return redirect()->route('reservations.index')->with('status', 'Reservation updated!');
+
         } catch (\Exception $e) {
             Log::error('Error updating reservation: ' . $e->getMessage());
 
@@ -323,5 +290,44 @@ class ReservationController extends Controller
             'reservation' => $reservation,
             'car' => $reservation->car
         ]);
+    }
+
+    public function cancelReservation(Request $request, $id)
+    {
+        $reservation = Reservation::findOrFail($id);
+        $oldStatus = $reservation->status;
+        $reservation->update(['status' => 'cancelled']);
+
+        if ($oldStatus !== 'cancelled') {
+            try {
+                $formattedStartDate = (new \DateTime($reservation->start_date))->format('Y-m-d H:i:s');
+                $formattedEndDate = (new \DateTime($reservation->end_date))->format('Y-m-d H:i:s');
+
+                UserNotification::create([
+                    'user_id' => $reservation->user->id,
+                    'title' => "Rental cancelled!",
+                    'message' => "{$reservation->user->name} {$reservation->user->surname}\nCar: {$reservation->car->brand} {$reservation->car->model}\nRental Date: {$formattedStartDate} --- {$formattedEndDate}\nTotal Price: {$reservation->total_price} PLN\n\nThe reservation has been cancelled.",
+                    'type' => 'cancellation',
+                    'status' => 'unread',
+                ]);
+
+                AdminNotification::create([
+                    'user_id' => 1,
+                    'title' => "Rental cancelled!",
+                    'message' => "Reservation ID: {$reservation->id}\nUser ID: {$reservation->user->id}\nUser: {$reservation->user->name} {$reservation->user->surname}\nCar ID: {$reservation->car->id}\nCar: {$reservation->car->brand} {$reservation->car->model}\nRental Date: {$formattedStartDate} --- {$formattedEndDate}\nTotal Price: {$reservation->total_price} PLN\n\nThe reservation has been cancelled.",
+                    'type' => 'cancellation',
+                    'status' => 'unread',
+                ]);
+
+                Mail::to($reservation->user->email)->send(new RentalCancelledMail($reservation));
+                Artisan::call('update:car-availability');
+
+            } catch (\Exception $e) {
+                Log::error('Error cancelling reservation: ' . $e->getMessage());
+                return back()->withErrors(['error' => 'Failed to cancel reservation.']);
+            }
+        }
+
+        return redirect()->route('reservations.session')->with('success', 'Rental cancelled successfully.');
     }
 }

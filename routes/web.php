@@ -62,6 +62,7 @@ Route::get('/reservations/edit/{reservation}', [ReservationController::class, 'e
 Route::get('/reservations/{reservation}/delete', [ReservationController::class, 'destroy'])->name('reservations.destroy')->middleware('auth');
 Route::get('/session', [ReservationController::class, 'showReservations'])->name('reservations.session')->middleware('auth')->middleware('can:isUser');
 Route::get('/reservations/{id}/rate', [ReservationController::class, 'rate'])->name('reservations.rate')->middleware('auth');
+Route::post('/reservations/{reservation}/cancel', [ReservationController::class, 'cancelReservation'])->name('reservations.cancel');
 
 Route::get('/reviews/list', [ReviewController::class, 'index'])->name('reviews.index')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/reviews/{review}', [ReviewController::class, 'show'])->name('reviews.show')->middleware('auth')->middleware('can:isAdmin');

@@ -14,67 +14,71 @@
                             <option value="rental" {{ request('type') === 'rental' ? 'selected' : '' }}>Rental</option>
                             <option value="payment" {{ request('type') === 'payment' ? 'selected' : '' }}>Payment</option>
                             <option value="penalty" {{ request('type') === 'penalty' ? 'selected' : '' }}>Penalty Payment</option>
+                            <option value="cancellation" {{ request('type') === 'cancellation' ? 'selected' : '' }}>Rental Cancellation</option>
                         </select>
                         <button type="submit" class="btn btn-primary">Filter</button>
                     </form>
                 </div>
             </div>
-
             @if ($notifications->isEmpty())
                 <br>
                 <h4>No notifications yet.</h4>
             @else
-                @foreach ($notifications as $notification)
-                    <div class="alert alert-info">
-                        <div class="d-flex justify-content-between align-items-center">
+            @foreach ($notifications as $notification)
+                <div class="alert alert-info">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            @if ($notification->type === 'rental')
+                                <span class="badge text-bg-primary">Rental</span>
+                            @elseif ($notification->type === 'payment')
+                                <span class="badge text-bg-primary">Payment</span>
+                            @elseif ($notification->type === 'penalty')
+                                <span class="badge text-bg-primary">Penalty Payment</span>
+                            @else
+                                <span class="badge text-bg-primary">Rental Cancellation</span>
+                            @endif
+                            <strong>{{ $notification->title }}</strong>
                             <div>
-                                @if ($notification->type === 'rental')
-                                    <span class="badge text-bg-primary">Rental</span>
-                                @elseif ($notification->type === 'payment')
-                                    <span class="badge text-bg-primary">Payment</span>
-                                @else
-                                    <span class="badge text-bg-primary">Penalty Payment</span>
-                                @endif
-                                <strong>{{ $notification->title }}</strong>
-                                <div>
-                                    <small>{{ $notification->created_at->addHour(2) }}</small>
-                                </div>
-                            </div>
-                            <div>
-                                @unless ($notification->status === 'read')
-                                    <form action="{{ route('notifications.markAsRead2', $notification->id) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        <button type="submit" class="btn btn-primary btn-sm">Mark as Read</button>
-                                    </form>
-                                @endunless
-                                @if ($notification->status === 'read')
-                                <form action="{{ route('notifications.destroy2', $notification->id) }}" class="d-inline delete-form" id="delete-form-{{ $notification->id }}">
-                                    <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete({{ $notification->id }})">Delete</button>
-                                </form>
-                                @endif
+                                <small>{{ $notification->created_at->addHour(2) }}</small>
                             </div>
                         </div>
-                        <div class="accordion mt-2" id="accordion{{ $notification->id }}">
-                            <div class="accordion-item alert">
-                                <h2 class="accordion-header" id="heading{{ $notification->id }}">
-                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $notification->id }}" aria-expanded="true" aria-controls="collapse{{ $notification->id }}" style="background-color: #66B2FF">
-                                        <strong>View Details</strong>
-                                    </button>
-                                </h2>
-                                <div id="collapse{{ $notification->id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ $notification->id }}" data-bs-parent="#accordion{{ $notification->id }}">
-                                    <div class="accordion-body">
-                                        {!! nl2br(e($notification->message)) !!}
-                                    </div>
+                        <div>
+                            @unless ($notification->status === 'read')
+                                <form action="{{ route('notifications.markAsRead2', $notification->id) }}" method="POST" class="d-inline">
+                                    @csrf
+                                    <input type="hidden" name="type" value="{{ request('type') }}">
+                                    <input type="hidden" name="page" value="{{ request('page', 1) }}">
+                                    <button type="submit" class="btn btn-primary btn-sm">Mark as Read</button>
+                                </form>
+                            @endunless
+                            @if ($notification->status === 'read')
+                            <form action="{{ route('notifications.destroy2', $notification->id) }}" class="d-inline delete-form" id="delete-form-{{ $notification->id }}">
+                                <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete({{ $notification->id }})">Delete</button>
+                            </form>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="accordion mt-2" id="accordion{{ $notification->id }}">
+                        <div class="accordion-item alert">
+                            <h2 class="accordion-header" id="heading{{ $notification->id }}">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $notification->id }}" aria-expanded="true" aria-controls="collapse{{ $notification->id }}" style="background-color: #66B2FF">
+                                    <strong>View Details</strong>
+                                </button>
+                            </h2>
+                            <div id="collapse{{ $notification->id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ $notification->id }}" data-bs-parent="#accordion{{ $notification->id }}">
+                                <div class="accordion-body">
+                                    {!! nl2br(e($notification->message)) !!}
                                 </div>
                             </div>
                         </div>
                     </div>
-                @endforeach
+                </div>
+            @endforeach
             @endif
         </div>
     </div>
     <div class="position-fixed bottom-0 start-50 translate-middle-x">
-        {{ $notifications->links() }}
+        {{ $notifications->appends(request()->query())->links() }}
     </div>
 </div>
 
