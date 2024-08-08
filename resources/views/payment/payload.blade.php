@@ -27,10 +27,10 @@
 
                     <div class="d-flex justify-content-center mt-4">
                         @can('isAdmin')
-                            <a href="{{ route('payment.index') }}" class="btn btn-secondary mx-2">Back</a>
+                            <a href="{{ route('payment.index') }}" class="btn btn-secondary btn-sm mx-2">Back to Payments</a>
                         @endcan
                         @can('isUser')
-                            <a href="{{ route('payment.user') }}" class="btn btn-secondary mx-2">Back</a>
+                            <a href="{{ route('payment.user') }}" class="btn btn-secondary btn-sm mx-2">Back to Payments</a>
                         @endcan
                     </div>
                 </div>

@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use App\Enums\UserRole;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Gate;
 
 class UserController extends Controller
 {
@@ -70,6 +71,16 @@ class UserController extends Controller
      */
     public function edit(User $user) : View
     {
+        if (Gate::allows('isAdmin')) {
+            $previousUrl = url()->previous();
+
+            if (strpos($previousUrl, 'users') !== false) {
+                session(['admin_edit_source' => 'users_index']);
+            } else {
+                session(['admin_edit_source' => 'profile_show']);
+            }
+        }
+
         return view('users.edit', [
             'user' => $user
         ]);

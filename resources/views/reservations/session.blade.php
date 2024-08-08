@@ -70,7 +70,7 @@
         </div>
         <div class="custom-modal-footer gap-3">
             <button type="button" class="btn btn-danger" id="confirmCancelBtn">Cancel Rental</button>
-            <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button type="button" class="btn btn-secondary" onclick="closeModal()">Go Back</button>
         </div>
     </div>
 </div>

@@ -5,7 +5,7 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header text-center">Editing A Car</div>
+                <div class="card-header text-center bg-primary text-white">Editing A Car</div>
 
                 <div class="card-body">
                     <form method="POST" action="{{ route('cars.update', $car->id) }}" enctype="multipart/form-data">
@@ -172,7 +172,7 @@
                             <label for="description" class="col-md-4 col-form-label text-md-end">Description</label>
 
                             <div class="col-md-6">
-                                <textarea id="description" maxlength="1500" class="form-control @error('description') is-invalid @enderror" name="description" required autofocus>{{ $car->description }}</textarea>
+                                <textarea id="description" maxlength="1500" rows="5" class="form-control @error('description') is-invalid @enderror" name="description" required autofocus>{{ $car->description }}</textarea>
 
                                 @error('description')
                                     <span class="invalid-feedback" role="alert">

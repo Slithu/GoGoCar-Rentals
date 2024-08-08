@@ -67,7 +67,7 @@
                         <p>No reviews available for this car.</p>
                     @endforelse
                     <div class="text-center">
-                        <a href="{{ route('welcome') }}" class="btn btn-secondary">Back to Main Tab</a>
+                        <a href="{{ route('welcome') }}" class="btn btn-secondary btn-sm">Back to Main Tab</a>
                     </div>
                 </div>
             </div>
