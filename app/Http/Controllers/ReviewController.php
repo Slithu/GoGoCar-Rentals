@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\StoreReviewRequest;
 use App\Models\Reservation;
 use Illuminate\Http\RedirectResponse;
+use App\Models\AdminNotification;
+use App\Models\UserNotification;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\ReviewMail;
 
 class ReviewController extends Controller
 {
@@ -100,8 +104,28 @@ class ReviewController extends Controller
 
     public function storeReview(StoreReviewRequest $request) : RedirectResponse
     {
+        $user = Auth::user();
         $review = new Review($request->validated());
         $review->save();
+
+        UserNotification::create([
+            'user_id' => $user->id,
+            'title' => "New car review completed!",
+            'message' => "{$review->user->name} {$review->user->surname}\nCar: {$review->car->brand} {$review->car->model}\nComfort: {$review->comfort_rating}\nDriving Experience: {$review->driving_experience_rating}\nFuel Efficiency: {$review->fuel_efficiency_rating}\nSafety Rating: {$review->safety_rating}\nComment: {$review->comment}",
+            'type' => 'review',
+            'status' => 'unread',
+        ]);
+
+        AdminNotification::create([
+            'user_id' => 1,
+            'title' => "New car review completed!",
+            'message' => "User ID: {$review->user_id}\nUser: {$review->user->name} {$review->user->surname}\nCar ID: {$review->car_id}\nCar: {$review->car->brand} {$review->car->model}\nComfort: {$review->comfort_rating}\nDriving Experience: {$review->driving_experience_rating}\nFuel Efficiency: {$review->fuel_efficiency_rating}\nSafety Rating: {$review->safety_rating}\nComment: {$review->comment}",
+            'type' => 'review',
+            'status' => 'unread',
+        ]);
+
+        $user = User::findOrFail($review->user_id);
+        Mail::to($user->email)->send(new ReviewMail($review));
 
         return redirect(route('reviews.user'))->with('status', 'Review stored!');
     }

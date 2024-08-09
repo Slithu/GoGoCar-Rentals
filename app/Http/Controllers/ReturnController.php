@@ -11,6 +11,11 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Auth;
+use App\Models\AdminNotification;
+use App\Models\UserNotification;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\ReturnMail;
+use Carbon\Carbon;
 
 class ReturnController extends Controller
 {
@@ -23,6 +28,28 @@ class ReturnController extends Controller
     {
         $return = new CarReturn($request->validated());
         $return->save();
+
+        $returnDate = Carbon::parse($return->return_date);
+        $formattedDate = $returnDate->format('Y-m-d H:i:s');
+
+        UserNotification::create([
+            'user_id' => $return->user_id,
+            'title' => "New car return completed!",
+            'message' => "{$return->user->name} {$return->user->surname}\nCar: {$return->reservation->car->brand} {$return->reservation->car->model}\nReturn Date: {$formattedDate}\nExterior Condition: {$return->exterior_condition}\nInterior Condition: {$return->interior_condition}\nExterior Damage Description: {$return->exterior_damage_description}\nCar Parts Condition: {$return->car_parts_condition}\nPenalty Amount: {$return->penalty_amount}\nComments: {$return->comments}",
+            'type' => 'return',
+            'status' => 'unread',
+        ]);
+
+        AdminNotification::create([
+            'user_id' => 1,
+            'title' => "New car return completed!",
+            'message' => "User: {$return->user->name} {$return->user->surname}\nCar ID: {$return->reservation->car_id}\nCar: {$return->reservation->car->brand} {$return->reservation->car->model}\nRental ID: {$return->reservation_id}\nReturn Date: {$formattedDate}\nExterior Condition: {$return->exterior_condition}\nInterior Condition: {$return->interior_condition}\nExterior Damage Description: {$return->exterior_damage_description}\nCar Parts Condition: {$return->car_parts_condition}\nPenalty Amount: {$return->penalty_amount}\nComments: {$return->comments}\n",
+            'type' => 'return',
+            'status' => 'unread',
+        ]);
+
+        $user = User::findOrFail($return->user_id);
+        Mail::to($user->email)->send(new ReturnMail($return));
 
         return redirect()->route('reservations.index')->with('status', 'Car return successfully processed.');
     }

@@ -15,6 +15,8 @@
                             <option value="payment" {{ request('type') === 'payment' ? 'selected' : '' }}>Payment</option>
                             <option value="penalty" {{ request('type') === 'penalty' ? 'selected' : '' }}>Penalty Payment</option>
                             <option value="cancellation" {{ request('type') === 'cancellation' ? 'selected' : '' }}>Rental Cancellation</option>
+                            <option value="review" {{ request('type') === 'review' ? 'selected' : '' }}>Car Review</option>
+                            <option value="return" {{ request('type') === 'return' ? 'selected' : '' }}>Car Return</option>
                         </select>
                         <button type="submit" class="btn btn-primary">Filter</button>
                     </form>
@@ -34,8 +36,12 @@
                                 <span class="badge text-bg-primary">Payment</span>
                             @elseif ($notification->type === 'penalty')
                                 <span class="badge text-bg-primary">Penalty Payment</span>
-                            @else
+                            @elseif ($notification->type === 'cancellation')
                                 <span class="badge text-bg-primary">Rental Cancellation</span>
+                            @elseif ($notification->type === 'review')
+                                <span class="badge text-bg-primary">Car Review</span>
+                            @else
+                                <span class="badge text-bg-primary">Car Return</span>
                             @endif
                             <strong>{{ $notification->title }}</strong>
                             <div>
