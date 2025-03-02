@@ -18,9 +18,9 @@ class ReviewSeeder extends Seeder
             'car_id' => 2,
             'comfort_rating' => 4,
             'driving_experience_rating' => 3,
-            'fuel_efficiency_rating' => 4,
+            'fuel_efficiency_rating' => 5,
             'safety_rating' => 4,
-            'overall_rating' => 3.75,
+            'overall_rating' => 4.00,
             'comment' => 'Good car',
         ]);
 

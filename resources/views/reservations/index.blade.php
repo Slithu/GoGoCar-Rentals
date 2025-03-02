@@ -71,7 +71,7 @@
                         <td>{{$reservation->total_price}}</td>
                         <td>{{$reservation->status}}</td>
                         <td>
-                            @if ($reservation->carReturns->isEmpty())
+                            @if ($reservation->carReturns->isEmpty() && $reservation->status == 'confirmed')
                                 <a href="{{ route('returns.return', $reservation->id) }}">
                                     <button class="btn btn-primary btn-sm">Take Return</button>
                                 </a>

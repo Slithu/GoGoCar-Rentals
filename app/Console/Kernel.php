@@ -14,6 +14,7 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')->hourly();
         $schedule->command('update:car-availability')->hourly();
+        $schedule->command('update:reservations')->hourly();
     }
 
     /**
@@ -26,5 +27,6 @@ class Kernel extends ConsoleKernel
         require base_path('routes/console.php');
 
         \App\Console\Commands\UpdateCarAvailability::class;
+        \App\Console\Commands\UpdateReservations::class;
     }
 }

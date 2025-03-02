@@ -4,17 +4,18 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Car;
+use App\Services\RecommendationServiceManager;
 use App\Services\RecommendationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Artisan;
 
 class WelcomeController extends Controller
 {
-    protected $recommendationService;
+    protected $recommendationServiceManager;
 
-    public function __construct(RecommendationService $recommendationService)
+    public function __construct(RecommendationServiceManager $recommendationServiceManager)
     {
-        $this->recommendationService = $recommendationService;
+        $this->recommendationServiceManager = $recommendationServiceManager;
     }
 
     public function index(Request $request)
@@ -62,13 +63,21 @@ class WelcomeController extends Controller
         $recommendedCars = [];
         if (Auth::check()) {
             $user = Auth::user();
-            $recommendedCarIds = $this->recommendationService->getRecommendations($user);
 
+            // Pobierz odpowiedni serwis rekomendacji z menedżera
+            $recommendationService = $this->recommendationServiceManager->getService();
+
+            // Pobierz rekomendacje na podstawie użytkownika
+            $recommendedCarIds = $recommendationService->getRecommendations($user);
+
+            // Pobierz samochody, które zostały zarekomendowane
             $recommendedCars = Car::whereIn('id', $recommendedCarIds)->get();
         }
 
+        // Zaktualizuj dostępność samochodów (można to zrealizować jako zadanie Artisan)
         Artisan::call('update:car-availability');
 
+        // Zwróć widok
         return view('welcome', compact('cars', 'recommendedCars'));
     }
 }

@@ -58,8 +58,10 @@ class PaymentController extends Controller
             $payment->amount = $totalPrice;
             $payment->currency = 'PLN';
             $payment->type = 'rental';
-
             $payment->save();
+
+            $reservation->status = 'confirmed';
+            $reservation->save();
 
             Log::info('Payment object:', $payment->toArray());
 

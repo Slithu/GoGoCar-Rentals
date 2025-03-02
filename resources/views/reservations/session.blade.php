@@ -12,7 +12,19 @@
                         <p class="text-center">You don't have any rentals yet. If you want to rent a car, go to the Main Tab</p>
                     @else
                     <div class="list-group">
-                        <p style="text-align: center"><strong>You can cancel your car rental by clicking the cancel button below</strong></p>
+                        <p style="text-align: center"><strong>You can cancel your car rental by clicking the cancel button below</strong>
+                            <div class="col-7 text-end">
+                                <a href="{{ route('reservations.calendar') }}">
+                                    <button class="btn btn-primary">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar3-week" viewBox="0 0 16 16" style="margin-bottom: 3px">
+                                            <path d="M14 0H2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2M1 3.857C1 3.384 1.448 3 2 3h12c.552 0 1 .384 1 .857v10.286c0 .473-.448.857-1 .857H2c-.552 0-1-.384-1-.857z"/>
+                                            <path d="M12 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2m-5 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2m2-3a1 1 0 1 0 0-2 1 1 0 0 0 0 2m-5 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/>
+                                        </svg>
+                                        See Calendar
+                                    </button>
+                                </a>
+                            </div>
+                        </p>
                         @foreach($reservations as $reservation)
                             <div class="list-group-item text-center">
                                 <p><h5><strong> {{ $reservation->user->name ?? 'None' }} {{ $reservation->user->surname ?? 'None' }}</strong></h5></p>
@@ -25,13 +37,18 @@
                                     <a href="{{ route('reservations.show', $reservation->id) }}">
                                         <button class="btn btn-success">Show</button>
                                     </a>
+                                    @if ($reservation->status === 'pending' && $reservation->start_date > now()->addHours(2))
+                                        <a href="{{ route('payment.payment', $reservation->id) }}">
+                                            <button class="btn btn-warning">Pay {{ $reservation->total_price }} PLN</button>
+                                        </a>
+                                    @endif
                                     @if ($reservation->end_date > now()->addHours(2) && $reservation->status !== 'cancelled')
                                         <form action="{{ route('reservations.cancel', $reservation->id) }}" method="POST" class="d-inline" id="cancel-form-{{ $reservation->id }}">
                                             @csrf
                                             <button type="button" class="btn btn-danger" onclick="confirmCancel({{ $reservation->id }})">Cancel Rental</button>
                                         </form>
                                     @endif
-                                    @if ($reservation->end_date < now()->addHours(2) && !$reservation->review)
+                                    @if ($reservation->end_date < now()->addHours(2) && !$reservation->review && $reservation->status == 'confirmed')
                                         <a href="{{ route('reservations.rate', $reservation->id) }}">
                                             <button class="btn btn-primary">Rate</button>
                                         </a>
@@ -46,9 +63,9 @@
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="position-fixed bottom-0 start-50 translate-middle-x">
-            {{ $reservations->links() }}
+            <div class="position-fixed bottom-0 start-50 translate-middle-x">
+                {{ $reservations->links() }}
+            </div>
         </div>
     @endif
 </div>
@@ -66,7 +83,7 @@
             <span><strong>Car:</strong> {{ $reservation->car->brand ?? 'None' }} {{$reservation->car->model ?? 'None' }} </span><br>
             <span><strong>Start Date:</strong> {{ $reservation->start_date ?? 'None' }} </span><br>
             <span><strong>End Date:</strong> {{ $reservation->end_date ?? 'None' }} </span><br>
-            <span><strong>Total Price:</strong> {{ $reservation->total_price }} PLN</span>
+            <span><strong>Total Price:</strong> {{ $reservation->total_price ?? 'None' }} PLN</span>
         </div>
         <div class="custom-modal-footer gap-3">
             <button type="button" class="btn btn-danger" id="confirmCancelBtn">Cancel Rental</button>

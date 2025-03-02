@@ -159,5 +159,37 @@ class UserSeeder extends Seeder
             'country' => 'Poland',
             'password' => Hash::make('haslo123'),
         ]);
+
+        DB::table('users')->insert([
+            'name' => 'Grzegorz',
+            'surname' => 'Chwast',
+            'sex' => 'Male',
+            'image_path' => '',
+            'role' => 'user',
+            'email' => 'grzegorzchwast@gmail.com',
+            'phone' => '463856354',
+            'license' => '65374/24/2453',
+            'birth' => '1952-12-12',
+            'town' => 'Katowice',
+            'zip_code' => '66-353',
+            'country' => 'Poland',
+            'password' => Hash::make('haslo123'),
+        ]);
+
+        DB::table('users')->insert([
+            'name' => 'Waldemar',
+            'surname' => 'Noga',
+            'sex' => 'Male',
+            'image_path' => '',
+            'role' => 'user',
+            'email' => 'waldemarnoga@gmail.com',
+            'phone' => '542642757',
+            'license' => '76565/42/2445',
+            'birth' => '1992-04-23',
+            'town' => 'Bydgoszcz',
+            'zip_code' => '85-005',
+            'country' => 'Poland',
+            'password' => Hash::make('haslo123'),
+        ]);
     }
 }

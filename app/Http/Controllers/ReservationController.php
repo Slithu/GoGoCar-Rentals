@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Reservation;
 use App\Models\User;
 use App\Models\Car;
+use App\Models\RecommendationAlgorithm;
 use App\Models\Review;
 use App\Models\UserNotification;
 use Illuminate\View\View;
@@ -23,9 +24,17 @@ use App\Mail\RentalMail;
 use App\Mail\RentalCancelledMail;
 use App\Models\AdminNotification;
 use Illuminate\Support\Facades\Mail;
+use App\Services\RecommendationServiceManager;
 
 class ReservationController extends Controller
 {
+    protected $recommendationServiceManager;
+
+    public function __construct(RecommendationServiceManager $recommendationServiceManager)
+    {
+        $this->recommendationServiceManager = $recommendationServiceManager;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -111,13 +120,13 @@ class ReservationController extends Controller
             $minStartDate = new \DateTime();
         }
 
-        // Dodanie walidacji dla minimum 1 godziny od teraz, jeśli nie było wcześniejszej rezerwacji
+        // Dodanie walidacji dla minimum 2 godziny od teraz, jeśli nie było wcześniejszej rezerwacji
         if ($minStartDate <= new \DateTime()) {
             $minStartDate = (new \DateTime())->modify('+3 hour');
         }
 
         if ($startDate < $minStartDate) {
-            return back()->withErrors(['start_date' => 'Start date must be at least 1 hour from now.']);
+            return back()->withErrors(['start_date' => 'Start date must be at least 2 hours from now.']);
         }
 
         // Walidacja, czy data zakończenia nie jest w przeszłości
@@ -168,6 +177,17 @@ class ReservationController extends Controller
 
         $reservation->save();
 
+        // Pobieranie aktywnego algorytmu
+        $activeAlgorithm = RecommendationAlgorithm::getActiveAlgorithm();
+
+        // Sprawdzamy, czy algorytm to Naive Bayes, KNN, MLP, Decision Tree
+        $recommendedCar = $this->isCarRecommendedByAlgorithm($car);
+
+        if ($recommendedCar) {
+            // Jeśli samochód pochodzi z rekomendacji, zwiększamy licznik rezerwacji
+            $activeAlgorithm->increment('reservations_count');
+        }
+
         // Tworzenie powiadomień dla użytkownika i administratora
         UserNotification::create([
             'user_id' => $user->id,
@@ -193,6 +213,19 @@ class ReservationController extends Controller
         Artisan::call('update:car-availability');
 
         return redirect()->route('payment.payment', ['reservation' => $reservation->id])->with('status', 'Reservation stored successfully!');
+    }
+
+    private function isCarRecommendedByAlgorithm(Car $car)
+    {
+        // Pobierz odpowiedni serwis rekomendacji z menedżera
+        $recommendationService = $this->recommendationServiceManager->getService();
+
+        // Pobierz rekomendacje na podstawie użytkownika i algorytmu
+        $recommendedCarIds = $recommendationService->getRecommendations(Auth::user());
+        $recommendedCarIds = array_slice($recommendedCarIds, 0, 3);
+
+        // Sprawdź, czy ID samochodu znajduje się w tej liście rekomendacji
+        return in_array($car->id, $recommendedCarIds);
     }
 
     /**
@@ -329,5 +362,13 @@ class ReservationController extends Controller
         }
 
         return redirect()->route('reservations.session')->with('success', 'Rental cancelled successfully.');
+    }
+
+    public function userCalendar()
+    {
+        $reservations = Reservation::where('user_id', Auth::id())->where('status', 'confirmed')->get();
+        $cars = Car::all();
+
+        return view('reservations.calendar', compact('reservations', 'cars'));
     }
 }

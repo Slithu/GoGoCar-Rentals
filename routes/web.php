@@ -53,7 +53,7 @@ Route::get('/cars/edit/{car}', [CarController::class, 'edit'])->name('cars.edit'
 Route::get('/cars/{car}/delete', [CarController::class, 'destroy'])->name('cars.destroy')->middleware('can:isAdmin');
 Route::get('/cars/{car}/detail', [CarController::class, 'detail'])->name('cars.detail');
 
-Route::get('/reservations', [ReservationController::class, 'index'])->name('reservations.index')->middleware('auth');
+Route::get('/reservations', [ReservationController::class, 'index'])->name('reservations.index')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/reservations/create/{carId?}', [ReservationController::class, 'create'])->name('reservations.create')->middleware('auth');
 Route::get('/reservations/{reservation}', [ReservationController::class, 'show'])->name('reservations.show')->middleware('auth');
 Route::post('/reservations', [ReservationController::class, 'store'])->name('reservations.store')->middleware('auth');
@@ -63,6 +63,7 @@ Route::get('/reservations/{reservation}/delete', [ReservationController::class, 
 Route::get('/session', [ReservationController::class, 'showReservations'])->name('reservations.session')->middleware('auth')->middleware('can:isUser');
 Route::get('/reservations/{id}/rate', [ReservationController::class, 'rate'])->name('reservations.rate')->middleware('auth');
 Route::post('/reservations/{reservation}/cancel', [ReservationController::class, 'cancelReservation'])->name('reservations.cancel');
+Route::get('/user_calendar', [ReservationController::class, 'userCalendar'])->name('reservations.calendar')->middleware('auth');
 
 Route::get('/reviews/list', [ReviewController::class, 'index'])->name('reviews.index')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/reviews/{review}', [ReviewController::class, 'show'])->name('reviews.show')->middleware('auth')->middleware('can:isAdmin');
@@ -99,6 +100,8 @@ Route::post('/notifications/{id}/read2', [NotificationController::class, 'markAs
 Route::get('/notifications/{notification}/delete', [NotificationController::class, 'destroy'])->name('notifications.destroy')->middleware('auth')->middleware('can:isUser');
 Route::get('/notifications/{notification}/delete2', [NotificationController::class, 'destroy2'])->name('notifications.destroy2')->middleware('auth')->middleware('can:isAdmin');
 Route::get('/admin/rentals/calendar', [AdminController::class, 'calendar'])->name('admin.calendar')->middleware('auth')->middleware('can:isAdmin');
+Route::post('/admin/update-recommendation', [AdminController::class, 'updateRecommendationSettings'])->name('admin.update.recommendation')->middleware('can:isAdmin');
+Route::get('/admin/recommend-cars', [AdminController::class, 'recommendCars'])->name('admin.recommend.cars')->middleware('can:isAdmin');
 
 Route::get('/payments/details/{reservation}', [PaymentController::class, 'showPaymentForm'])->name('payment.payment')->middleware('auth');
 Route::post('/payments/process', [PaymentController::class, 'processPayment'])->name('payment.process')->middleware('auth');

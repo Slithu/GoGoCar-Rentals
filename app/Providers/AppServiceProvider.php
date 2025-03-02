@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
 use App\Services\RecommendationService;
+use App\Services\RecommendationServiceManager;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -13,8 +14,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(RecommendationService::class, function ($app) {
-            return new RecommendationService();
+        $this->app->singleton(RecommendationServiceManager::class, function ($app) {
+            return new RecommendationServiceManager();
         });
     }
 

@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
-use Phpml\Classification\NaiveBayes;
+use Phpml\Classification\MLPClassifier;
+use Phpml\NeuralNetwork\ActivationFunction\Sigmoid;
+use Phpml\NeuralNetwork\ActivationFunction\PReLU;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -10,8 +13,9 @@ use App\Models\User;
 use App\Models\Reservation;
 use App\Models\Review;
 use App\Models\Car;
+use App\Models\RecommendationAlgorithm;
 
-class RecommendationService
+class RecommendationService3
 {
     private $sexMapping;
     private $carBodyMapping;
@@ -53,10 +57,8 @@ class RecommendationService
         $userReservations = $reservations->where('user_id', $userId);
 
         if ($userReservations->isEmpty()) {
-            // Jeśli użytkownik nie ma rezerwacji, wywołaj recommendForNewUser
             return $this->recommendForNewUser($users, $reservations, $currentUser);
         } else {
-            // Jeśli użytkownik ma rezerwacje, wywołaj recommendForExistingUser
             return $this->recommendForExistingUser();
         }
     }
@@ -134,22 +136,46 @@ class RecommendationService
             throw new \Exception("Number of features in prediction data does not match training data.");
         }
 
-        // Stwórz i wytrenuj model klasyfikacji
-        $classifier = new NaiveBayes();
+        // Pobieranie aktywnego algorytmu na podstawie pola is_active lub domyślnego algorytmu
+        $activeAlgorithm = RecommendationAlgorithm::where('is_active', true)
+        ->first() ?? RecommendationAlgorithm::where('algorithm_name', 'naive_bayes')->first();
+
+        // Pobieranie parametrów MLP z bazy danych
+        $mlpHiddenLayer1 = $activeAlgorithm->mlp_hidden_layer_1 ?? 8;  // Domyślnie 8, jeśli brak w bazie
+        $mlpHiddenLayer2 = $activeAlgorithm->mlp_hidden_layer_2 ?? 8;  // Domyślnie 8, jeśli brak w bazie
+        $mlpIterations = $activeAlgorithm->mlp_iterations ?? 1000;     // Domyślnie 1000, jeśli brak w bazie
+
+        // Konstrukcja modelu MLPClassifier
+        $classifier = new MLPClassifier(
+            (int) count($trainingData[0]),                 // neurony w warstwie wejściowej (cechy)
+            [
+                [$mlpHiddenLayer1, new PReLU()],           // Pierwsza warstwa ukryta z 8 neuronami używającymi aktywacji PReLU
+                [$mlpHiddenLayer2, new Sigmoid()]          // Druga warstwa ukryta z 8 neuronami używającymi aktywacji Sigmoid
+            ],
+            array_unique($labels),                          // Unikalne etykiety wyjściowe (ID samochodów)
+            $mlpIterations                                  // Liczba iteracji
+        );
+
         $classifier->train($trainingData, $labels);
+        $classifier->setLearningRate(0.1);
 
         if ($similarUsers->isNotEmpty()) {
             $similarUserIds = $similarUsers->pluck('id')->toArray();
             $reservationsBySimilarUsers = $reservations->whereIn('user_id', $similarUserIds);
 
             if ($reservationsBySimilarUsers->isEmpty()) {
-                // Jeśli podobni użytkownicy nie mają rezerwacji, zwróć najpopularniejsze samochody
-                Log::info('Similar users have no reservations. Returning best rated and most rented cars.');
-                return $this->recommendBestRatedAndMostRentedCars();
+                Log::info('Similar users have no reservations. Returning most rented cars.');
+                return $this->recommendMostRentedCars();
             }
 
             $carRecommendations = $this->getCarRecommendationsFromReservations($reservationsBySimilarUsers);
             Log::info('Car Recommendations from Similar Users:', ['recommendedCarIds' => $carRecommendations]);
+
+            // Dodaj samochód z największą ilością wypożyczeń
+            $mostRentedCar = $this->getMostRentedCar($reservations);
+            if ($mostRentedCar) {
+                $carRecommendations[] = $mostRentedCar->id;
+            }
 
             return $carRecommendations;
         } else {
@@ -157,74 +183,58 @@ class RecommendationService
             try {
                 $predictedCarIds = $classifier->predict([$currentUserFeatures]);
 
-                // Pobierz samochody, które są zgodne z przewidywanymi ID
                 $recommendedCars = Car::whereIn('id', $predictedCarIds)->get();
 
                 if ($recommendedCars->isNotEmpty()) {
-                    // Jeśli model zwrócił mniej niż 3 samochody, dodaj rekomendacje na podstawie ocen i liczby wypożyczeń
                     $topCarIds = $recommendedCars->pluck('id')->take(3)->toArray();
 
                     if (count($topCarIds) < 3) {
-                        // Dodaj dodatkowe rekomendacje, aby uzyskać 3 samochody
-                        $additionalCars = $this->recommendBestRatedAndMostRentedCars();
+                        $additionalCars = $this->recommendMostRentedCars();
                         $topCarIds = array_merge($topCarIds, $additionalCars);
                         $topCarIds = array_unique($topCarIds);
                         $topCarIds = array_slice($topCarIds, 0, 3);
                     }
 
+                    // Dodaj samochód z największą ilością wypożyczeń
+                    $mostRentedCar = $this->getMostRentedCar($reservations);
+                    if ($mostRentedCar) {
+                        $topCarIds[] = $mostRentedCar->id;
+                    }
+
                     Log::info('Car Recommendations for New User from Model:', ['recommendedCarIds' => $topCarIds]);
                     return $topCarIds;
                 } else {
-                    // Jeśli brak rekomendacji z modelu, użyj rekomendacji na podstawie ocen i liczby wypożyczeń
-                    Log::info('Model did not provide recommendations. Falling back to best rated and most rented cars.');
-                    return $this->recommendBestRatedAndMostRentedCars();
+                    Log::info('Model did not provide recommendations. Falling back to most rented cars.');
+                    return $this->recommendMostRentedCars();
                 }
             } catch (\Exception $e) {
                 Log::error('Error in predicting car recommendations for new user:', ['error' => $e->getMessage()]);
-                // W przypadku błędu w przewidywaniu, użyj rekomendacji na podstawie ocen i liczby wypożyczeń
-                return $this->recommendBestRatedAndMostRentedCars();
+                return $this->recommendMostRentedCars();
             }
         }
     }
 
-    private function recommendBestRatedAndMostRentedCars()
+    private function getMostRentedCar($reservations)
     {
-        $carRatings = [];
-        $carCounts = [];
+        // Grupa samochodów po ID i zlicz ilość wypożyczeń
+        $carReservations = $reservations->groupBy('car_id')->map(function ($group) {
+            return $group->count();
+        });
 
-        $reservations = $this->getReservations();
-        foreach ($reservations as $reservation) {
-            $carId = $reservation->car_id;
+        // Znajdź samochód z największą ilością wypożyczeń
+        $mostRentedCarId = $carReservations->sortDesc()->keys()->first();
 
-            if (!isset($carCounts[$carId])) {
-                $carCounts[$carId] = 0;
-                $carRatings[$carId] = $this->getCarRatings($carId);
-            }
+        return Car::find($mostRentedCarId);
+    }
 
-            $carCounts[$carId]++;
-        }
+    private function recommendMostRentedCars()
+    {
+        // Tutaj możesz stworzyć logikę do rekomendowania samochodów z największą ilością wypożyczeń
+        $mostRentedCars = Car::all()->sortByDesc(function ($car) {
+            return $car->reservations->count();
+        })->take(3);
 
-        // Oblicz średnie oceny
-        foreach ($carRatings as $carId => $ratings) {
-            $numReviews = $carCounts[$carId];
-            $carRatings[$carId] = [
-                'comfort' => $ratings['comfort'] / $numReviews,
-                'driving_experience' => $ratings['driving_experience'] / $numReviews,
-                'fuel_efficiency' => $ratings['fuel_efficiency'] / $numReviews,
-                'safety' => $ratings['safety'] / $numReviews,
-                'overall' => $ratings['overall'] / $numReviews
-            ];
-        }
-
-        // Sortuj samochody według liczby wypożyczeń i ocen
-        $sortedCars = collect($carCounts)->sortByDesc(function ($count, $carId) use ($carRatings) {
-            $ratings = $carRatings[$carId];
-            return $count * $ratings['overall'];
-        })->keys()->take(3)->toArray();
-
-        Log::info('Best Rated and Most Rented Cars:', ['recommendedCarIds' => $sortedCars]);
-
-        return array_slice($sortedCars, 0, 5);
+        return $mostRentedCars->pluck('id')->toArray();
     }
 
     private function getCarRecommendationsFromReservations($reservations)
@@ -291,9 +301,34 @@ class RecommendationService
                 return $this->recommendCarsByUserReservations($userReservations);
             }
 
-            // Stwórz i wytrenuj model klasyfikacji
-            $classifier = new NaiveBayes();
+            $uniqueLabels = array_unique($labels);
+            if (count($uniqueLabels) < 2) {
+                // Jeżeli mamy tylko jedną klasę, zwróć błąd lub przekaż inne dane treningowe
+                Log::error('Training data contains only one class. Cannot train the model.');
+                return $this->recommendCarsByUserReservations($userReservations); // Lub inne zachowanie w przypadku braku różnorodnych klas
+            }
+
+            // Pobieranie aktywnego algorytmu na podstawie pola is_active lub domyślnego algorytmu
+            $activeAlgorithm = RecommendationAlgorithm::where('is_active', true)
+            ->first() ?? RecommendationAlgorithm::where('algorithm_name', 'naive_bayes')->first();
+
+            // Pobieranie parametrów MLP z bazy danych
+            $mlpHiddenLayer1 = $activeAlgorithm->mlp_hidden_layer_1 ?? 8;  // Domyślnie 8, jeśli brak w bazie
+            $mlpHiddenLayer2 = $activeAlgorithm->mlp_hidden_layer_2 ?? 8;  // Domyślnie 8, jeśli brak w bazie
+            $mlpIterations = $activeAlgorithm->mlp_iterations ?? 1000;     // Domyślnie 1000, jeśli brak w bazie
+
+            $classifier = new MLPClassifier(
+                (int) count($trainingData[0]),                 // neurony w warstwie wejściowej (cechy)
+                [
+                    [$mlpHiddenLayer1, new PReLU()],           // Pierwsza warstwa ukryta z 8 neuronami używającymi aktywacji PReLU
+                    [$mlpHiddenLayer2, new Sigmoid()]          // Druga warstwa ukryta z 8 neuronami używającymi aktywacji Sigmoid
+                ],
+                array_unique($labels),                          // Unikalne etykiety wyjściowe (ID samochodów)
+                $mlpIterations                                  // Liczba iteracji
+            );
+
             $classifier->train($trainingData, $labels);
+            $classifier->setLearningRate(0.1);
 
             // Predykcja dla obecnego użytkownika
             try {
@@ -365,6 +400,48 @@ class RecommendationService
         return array_unique($recommendedCarIds);  // Unikalne samochody
     }
 
+    private function recommendBestRatedAndMostRentedCars()
+    {
+        $carRatings = [];
+        $carCounts = [];
+
+        $reservations = $this->getReservations();
+        foreach ($reservations as $reservation) {
+            $car = $reservation->car;
+            if (!isset($carRatings[$car->id])) {
+                $carRatings[$car->id] = [
+                    'comfort' => 0,
+                    'driving_experience' => 0,
+                    'fuel_efficiency' => 0,
+                    'safety' => 0,
+                    'overall' => 0,
+                ];
+                $carCounts[$car->id] = 0;
+            }
+
+            $carRatings[$car->id]['comfort'] += $reservation->comfort_rating;
+            $carRatings[$car->id]['driving_experience'] += $reservation->driving_experience_rating;
+            $carRatings[$car->id]['fuel_efficiency'] += $reservation->fuel_efficiency_rating;
+            $carRatings[$car->id]['safety'] += $reservation->safety_rating;
+            $carRatings[$car->id]['overall'] += $reservation->overall_rating;
+            $carCounts[$car->id]++;
+        }
+
+        // Obliczanie średnich ocen
+        $averageRatings = [];
+        foreach ($carRatings as $carId => $ratings) {
+            foreach ($ratings as $feature => $totalRating) {
+                $averageRatings[$carId][$feature] = $totalRating / $carCounts[$carId];
+            }
+        }
+
+        // Posortowanie samochodów według najlepszych średnich ocen
+        arsort($averageRatings);
+        $topCarIds = array_keys($averageRatings);
+
+        return array_slice($topCarIds, 0, 3);
+    }
+
     private function getCarRatings($carId)
     {
         $defaultRatings = [
@@ -408,7 +485,7 @@ class RecommendationService
 
     private function encodeSex($sex)
     {
-        return $this->sexMapping[$sex] ?? 0;
+        return $this->sexMapping[$sex] ?? null;
     }
 
     private function encodeCarBody($carBody)
@@ -418,7 +495,7 @@ class RecommendationService
 
     private function calculateAge($birthDate)
     {
-        return $birthDate ? Carbon::parse($birthDate)->age : null;
+        return Carbon::parse($birthDate)->age;
     }
 
     private function getUsers()

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\DB;
@@ -11,15 +13,146 @@ use App\Models\Car;
 use App\Models\User;
 use App\Models\Payment;
 use App\Models\Reservation;
+use App\Models\RecommendationAlgorithm;
 use App\Models\Review;
 use Illuminate\Support\Facades\Artisan;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class AdminController extends Controller
 {
     public function index() : View
     {
-        return view("admin.index");
+        $algorithms = RecommendationAlgorithm::all();
+
+        // Pobieranie aktywnego algorytmu
+        $activeAlgorithm = RecommendationAlgorithm::getActiveAlgorithm();
+
+        // Jeśli brak aktywnego algorytmu, ustawiamy domyślny
+        if (!$activeAlgorithm) {
+            $activeAlgorithm = RecommendationAlgorithm::where('algorithm_name', 'naive_bayes')->first();
+        }
+
+        // Paginowanie historii aktywacji i dezaktywacji
+        foreach ($algorithms as $algorithm) {
+            // Dekodowanie dat aktywacji i dezaktywacji
+            $activationDates = json_decode($algorithm->activated_at, true) ?? [];
+            $deactivationDates = json_decode($algorithm->deactivated_at, true) ?? [];
+
+            // Tworzymy kolekcję z datami aktywacji
+            $activationHistory = collect($activationDates)->map(function ($activationDate, $index) use ($deactivationDates) {
+                return [
+                    'activation' => \Carbon\Carbon::parse($activationDate)->format('Y-m-d'),
+                    'deactivation' => isset($deactivationDates[$index])
+                        ? \Carbon\Carbon::parse($deactivationDates[$index])->format('Y-m-d')
+                        : 'No deactivation history'
+                ];
+            });
+
+            // Paginacja kolekcji: 5 elementów na stronę
+            $perPage = 5;
+            $currentPage = request()->get('page', 1); // Numer strony z requesta
+            $paginatedHistory = $activationHistory->forPage($currentPage, $perPage); // Paginuje dane
+
+            // Ustawiamy paginowaną historię w algorytmie
+            $algorithm->activationHistory = $paginatedHistory;
+
+            // Ustawiamy także dane o całkowitej liczbie stron, żeby przekazać do widoku
+            $algorithm->totalActivationHistory = $activationHistory->count();
+            $algorithm->totalPages = ceil($algorithm->totalActivationHistory / $perPage); // Liczba stron
+        }
+
+        $accordionOpen = request()->get('accordion_open', null); // Zmienna dla otwartej sekcji akordeonu
+
+        return view("admin.index", compact('algorithms', 'activeAlgorithm', 'accordionOpen'));
+    }
+
+    public function updateRecommendationSettings(Request $request)
+    {
+        // Walidacja danych wejściowych
+        $request->validate([
+            'active_algorithm' => 'required|string',
+            'knn_k' => 'nullable|integer|min:1|max:100',
+            'mlp_hidden_layer_1' => 'nullable|integer|min:1|max:100',
+            'mlp_hidden_layer_2' => 'nullable|integer|min:1|max:100',
+            'mlp_iterations' => 'nullable|integer|min:100|max:100000',
+            'decision_tree_depth' => 'nullable|integer|min:1|max:50',
+        ]);
+
+        // Pobranie aktualnie aktywnego algorytmu
+        $currentActiveAlgorithm = RecommendationAlgorithm::where('is_active', true)->first();
+
+        // Jeśli zmienia się aktywny algorytm, zapisujemy datę deaktywacji
+        if ($currentActiveAlgorithm && $currentActiveAlgorithm->algorithm_name !== $request->input('active_algorithm')) {
+            $deactivatedAt = json_decode($currentActiveAlgorithm->deactivated_at, true) ?? [];
+            $deactivatedAt[] = now()->toDateString(); // Dodajemy datę deaktywacji
+            $currentActiveAlgorithm->deactivated_at = json_encode($deactivatedAt);
+            $currentActiveAlgorithm->is_active = false; // Dezaktywujemy obecny algorytm
+            $currentActiveAlgorithm->save(); // Zapisujemy zmiany
+        }
+
+        // Wyłączenie aktywności innych algorytmów
+        RecommendationAlgorithm::where('is_active', true)->update(['is_active' => false]);
+
+        // Pobranie lub stworzenie nowego algorytmu
+        $newAlgorithm = RecommendationAlgorithm::where('algorithm_name', $request->input('active_algorithm'))->first();
+
+        if (!$newAlgorithm) {
+            // Jeśli algorytm nie istnieje, tworzymy nowy
+            $newAlgorithm = new RecommendationAlgorithm();
+            $newAlgorithm->algorithm_name = $request->input('active_algorithm');
+            $newAlgorithm->activation_count = 1;
+            $newAlgorithm->activated_at = json_encode([now()->toDateString()]); // Dodajemy datę aktywacji
+        } else {
+            // Jeśli algorytm istnieje, zwiększamy licznik aktywacji
+            $newAlgorithm->activation_count += 1;
+
+            // Jeżeli algorytm staje się aktywny, dodajemy datę aktywacji
+            $activatedAt = json_decode($newAlgorithm->activated_at, true) ?? [];
+            // Dodajemy datę aktywacji tylko wtedy, gdy zmienia się algorytm, a nie tylko jego parametry
+            if ($newAlgorithm->algorithm_name !== $currentActiveAlgorithm->algorithm_name) {
+                $activatedAt[] = now()->toDateString(); // Dodajemy nową datę aktywacji
+            }
+            $newAlgorithm->activated_at = json_encode($activatedAt);
+        }
+
+        // Ustawiamy parametry specyficzne dla algorytmu
+        if ($request->input('active_algorithm') === 'knn') {
+            $newAlgorithm->knn_k = $request->input('knn_k', 3);
+        } elseif ($request->input('active_algorithm') === 'mlp') {
+            $newAlgorithm->mlp_hidden_layer_1 = $request->input('mlp_hidden_layer_1', 8);
+            $newAlgorithm->mlp_hidden_layer_2 = $request->input('mlp_hidden_layer_2', 8);
+            $newAlgorithm->mlp_iterations = $request->input('mlp_iterations', 1000);
+        } elseif ($request->input('active_algorithm') === 'decision_tree') {
+            $newAlgorithm->decision_tree_depth = $request->input('decision_tree_depth', 10);
+        }
+
+        // Ustawiamy aktywność tego algorytmu
+        $newAlgorithm->is_active = true;
+
+        // Zapisujemy algorytm
+        $newAlgorithm->save();
+
+        return redirect()->route('admin.index')->with('success', 'Algorithm settings updated successfully.');
+    }
+
+    public function recommendCars(Request $request)
+    {
+        $userId = $request->user()->id;
+
+        // Pobranie aktywnego algorytmu
+        $activeAlgorithm = RecommendationAlgorithm::getActiveAlgorithm();
+
+        // Logika rekomendacji (na podstawie aktywnego algorytmu)
+        $recommendedCars = Car::recommendBasedOnAlgorithm($activeAlgorithm->algorithm_name, $userId);
+
+        // Zwiększenie licznika rekomendacji
+        $activeAlgorithm->increment('recommendations_count');
+
+        return response()->json([
+            'recommended_cars' => $recommendedCars,
+            'algorithm' => $activeAlgorithm->algorithm_name,
+        ]);
     }
 
     public function generateUsersReport()
@@ -139,6 +272,7 @@ class AdminController extends Controller
 
         $monthlyUserCounts = User::selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as count')
             ->whereBetween('created_at', [$startDate, $endDate])
+            ->where('role', 'user')
             ->groupBy('year', 'month')
             ->orderBy('year')
             ->orderBy('month')
@@ -172,7 +306,7 @@ class AdminController extends Controller
 
         $ageCounts = array_fill_keys(array_keys($ageRanges), 0);
 
-        foreach (User::all() as $user) {
+        foreach (User::where('role', 'user')->get() as $user) {
             $birthDate = Carbon::parse($user->birth);
             $age = $now - $birthDate->year;
 
@@ -195,8 +329,8 @@ class AdminController extends Controller
         $genders = ['Male', 'Female'];
 
         $genderCounts = [
-            'Male'   => User::where('sex', 'male')->count(),
-            'Female' => User::where('sex', 'female')->count(),
+            'Male'   => User::where('sex', 'male')->where('role', 'user')->count(),
+            'Female' => User::where('sex', 'female')->where('role', 'user')->count(),
         ];
 
         $genderLabels = array_keys($genderCounts);
@@ -398,7 +532,7 @@ class AdminController extends Controller
     {
         return view('admin.calendar', [
             'cars' => Car::all(),
-            'reservations' => Reservation::all(),
+            'reservations' => Reservation::where('status', 'confirmed')->get(),
         ]);
     }
 }

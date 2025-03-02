@@ -184,19 +184,20 @@
                         <div class="row mb-0">
                             <div class="col-md-0 offset-md-5">
                                 <button type="submit" class="btn btn-primary">Save</button>
+
                                 @can('isAdmin')
                                     @php
                                         $cancelRoute = session('admin_edit_source') == 'users_index' ? 'users.index' : 'profile.show';
                                     @endphp
                                     <a href="{{ route($cancelRoute) }}" class="btn btn-secondary">Cancel</a>
-                                @else
-                                    <a href="{{ route('profile.show') }}" class="btn btn-secondary">Cancel</a>
                                 @endcan
+
                                 @can('isUser')
                                     <a href="{{ route('profile.show') }}" class="btn btn-secondary">Cancel</a>
                                 @endcan
                             </div>
                         </div>
+
                     </form>
                 </div>
             </div>

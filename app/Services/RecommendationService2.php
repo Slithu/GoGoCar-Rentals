@@ -2,16 +2,18 @@
 
 namespace App\Services;
 
-use Phpml\Classification\NaiveBayes;
+use Phpml\Classification\KNearestNeighbors;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Reservation;
 use App\Models\Review;
 use App\Models\Car;
+use App\Models\RecommendationAlgorithm;
 
-class RecommendationService
+class RecommendationService2
 {
     private $sexMapping;
     private $carBodyMapping;
@@ -53,10 +55,8 @@ class RecommendationService
         $userReservations = $reservations->where('user_id', $userId);
 
         if ($userReservations->isEmpty()) {
-            // Jeśli użytkownik nie ma rezerwacji, wywołaj recommendForNewUser
             return $this->recommendForNewUser($users, $reservations, $currentUser);
         } else {
-            // Jeśli użytkownik ma rezerwacje, wywołaj recommendForExistingUser
             return $this->recommendForExistingUser();
         }
     }
@@ -128,62 +128,44 @@ class RecommendationService
             return $this->recommendBestRatedAndMostRentedCars();
         }
 
-        // Sprawdź, czy liczba cech jest spójna
         $numFeatures = count($trainingData[0]);
         if (count($currentUserFeatures) !== $numFeatures) {
             throw new \Exception("Number of features in prediction data does not match training data.");
         }
 
-        // Stwórz i wytrenuj model klasyfikacji
-        $classifier = new NaiveBayes();
+        // Pobieranie aktywnego algorytmu na podstawie pola is_active lub domyślnego algorytmu
+        $activeAlgorithm = RecommendationAlgorithm::where('is_active', true)
+        ->first() ?? RecommendationAlgorithm::where('algorithm_name', 'naive_bayes')->first();
+
+        // Pobranie wartości k dla algorytmu KNN (domyślnie 3, jeśli brak algorytmu)
+        $k = $activeAlgorithm->knn_k ?? 3;
+        $classifier = new KNearestNeighbors($k);
         $classifier->train($trainingData, $labels);
 
-        if ($similarUsers->isNotEmpty()) {
-            $similarUserIds = $similarUsers->pluck('id')->toArray();
-            $reservationsBySimilarUsers = $reservations->whereIn('user_id', $similarUserIds);
+        try {
+            $predictedCarIds = $classifier->predict([$currentUserFeatures]);
 
-            if ($reservationsBySimilarUsers->isEmpty()) {
-                // Jeśli podobni użytkownicy nie mają rezerwacji, zwróć najpopularniejsze samochody
-                Log::info('Similar users have no reservations. Returning best rated and most rented cars.');
-                return $this->recommendBestRatedAndMostRentedCars();
-            }
+            $recommendedCars = Car::whereIn('id', $predictedCarIds)->get();
 
-            $carRecommendations = $this->getCarRecommendationsFromReservations($reservationsBySimilarUsers);
-            Log::info('Car Recommendations from Similar Users:', ['recommendedCarIds' => $carRecommendations]);
+            if ($recommendedCars->isNotEmpty()) {
+                $topCarIds = $recommendedCars->pluck('id')->take(3)->toArray();
 
-            return $carRecommendations;
-        } else {
-            // Jeśli brak podobnych użytkowników, użyj modelu do przewidywań
-            try {
-                $predictedCarIds = $classifier->predict([$currentUserFeatures]);
-
-                // Pobierz samochody, które są zgodne z przewidywanymi ID
-                $recommendedCars = Car::whereIn('id', $predictedCarIds)->get();
-
-                if ($recommendedCars->isNotEmpty()) {
-                    // Jeśli model zwrócił mniej niż 3 samochody, dodaj rekomendacje na podstawie ocen i liczby wypożyczeń
-                    $topCarIds = $recommendedCars->pluck('id')->take(3)->toArray();
-
-                    if (count($topCarIds) < 3) {
-                        // Dodaj dodatkowe rekomendacje, aby uzyskać 3 samochody
-                        $additionalCars = $this->recommendBestRatedAndMostRentedCars();
-                        $topCarIds = array_merge($topCarIds, $additionalCars);
-                        $topCarIds = array_unique($topCarIds);
-                        $topCarIds = array_slice($topCarIds, 0, 3);
-                    }
-
-                    Log::info('Car Recommendations for New User from Model:', ['recommendedCarIds' => $topCarIds]);
-                    return $topCarIds;
-                } else {
-                    // Jeśli brak rekomendacji z modelu, użyj rekomendacji na podstawie ocen i liczby wypożyczeń
-                    Log::info('Model did not provide recommendations. Falling back to best rated and most rented cars.');
-                    return $this->recommendBestRatedAndMostRentedCars();
+                if (count($topCarIds) < 3) {
+                    $additionalCars = $this->recommendBestRatedAndMostRentedCars();
+                    $topCarIds = array_merge($topCarIds, $additionalCars);
+                    $topCarIds = array_unique($topCarIds);
+                    $topCarIds = array_slice($topCarIds, 0, 3);
                 }
-            } catch (\Exception $e) {
-                Log::error('Error in predicting car recommendations for new user:', ['error' => $e->getMessage()]);
-                // W przypadku błędu w przewidywaniu, użyj rekomendacji na podstawie ocen i liczby wypożyczeń
+
+                Log::info('Car Recommendations for New User from Model:', ['recommendedCarIds' => $topCarIds]);
+                return $topCarIds;
+            } else {
+                Log::info('Model did not provide recommendations. Falling back to best rated and most rented cars.');
                 return $this->recommendBestRatedAndMostRentedCars();
             }
+        } catch (\Exception $e) {
+            Log::error('Error in predicting car recommendations for new user:', ['error' => $e->getMessage()]);
+            return $this->recommendBestRatedAndMostRentedCars();
         }
     }
 
@@ -225,18 +207,6 @@ class RecommendationService
         Log::info('Best Rated and Most Rented Cars:', ['recommendedCarIds' => $sortedCars]);
 
         return array_slice($sortedCars, 0, 5);
-    }
-
-    private function getCarRecommendationsFromReservations($reservations)
-    {
-        $carRecommendations = [];
-        foreach ($reservations as $reservation) {
-            $carId = $reservation->car_id;
-            $carRecommendations[$carId] = ($carRecommendations[$carId] ?? 0) + 1;
-        }
-
-        arsort($carRecommendations);
-        return array_slice(array_keys($carRecommendations), 0, 10); // Zwróć top 10 samochodów
     }
 
     private function recommendForExistingUser()
@@ -287,17 +257,24 @@ class RecommendationService
 
             if (empty($trainingData) || empty($labels)) {
                 // Jeśli nie ma danych treningowych, zwróć rekomendacje na podstawie typów nadwozia użytkownika
-                Log::info('No training data for classifier. Returning cars based on user\'s past reservations.');
+                Log::info('No training data for KNN. Returning cars based on user\'s past reservations.');
                 return $this->recommendCarsByUserReservations($userReservations);
             }
 
-            // Stwórz i wytrenuj model klasyfikacji
-            $classifier = new NaiveBayes();
-            $classifier->train($trainingData, $labels);
+            // Pobieranie aktywnego algorytmu na podstawie pola is_active lub domyślnego algorytmu
+            $activeAlgorithm = RecommendationAlgorithm::where('is_active', true)
+            ->first() ?? RecommendationAlgorithm::where('algorithm_name', 'naive_bayes')->first();
+
+            // Pobranie wartości k dla algorytmu KNN (domyślnie 3, jeśli brak algorytmu)
+            $k = $activeAlgorithm->knn_k ?? 3;
+
+            // Stwórz obiekt KNN i dokonaj predykcji
+            $knn = new KNearestNeighbors($k);
+            $knn->train($trainingData, $labels);
 
             // Predykcja dla obecnego użytkownika
             try {
-                $predictedCarIds = $classifier->predict([$currentUserFeatures]);
+                $predictedCarIds = $knn->predict([$currentUserFeatures]);
 
                 // Pobierz samochody, które są zgodne z przewidywanymi ID
                 $recommendedCars = Car::whereIn('id', $predictedCarIds)->get();
@@ -327,7 +304,6 @@ class RecommendationService
                     // Jeśli model zwrócił wystarczającą liczbę samochodów, zwróć je
                     $recommendedCarIds = $predictedCarIds;
                 }
-
                 Log::info('Car Recommendations for Existing User (Similar Users):', ['recommendedCarIds' => $recommendedCarIds]);
 
                 return $recommendedCarIds;

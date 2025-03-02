@@ -2,16 +2,19 @@
 
 namespace App\Services;
 
-use Phpml\Classification\NaiveBayes;
+use Phpml\Classification\DecisionTree;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Reservation;
 use App\Models\Review;
 use App\Models\Car;
+use App\Models\RecommendationAlgorithm;
 
-class RecommendationService
+class RecommendationService4
 {
     private $sexMapping;
     private $carBodyMapping;
@@ -53,10 +56,8 @@ class RecommendationService
         $userReservations = $reservations->where('user_id', $userId);
 
         if ($userReservations->isEmpty()) {
-            // Jeśli użytkownik nie ma rezerwacji, wywołaj recommendForNewUser
             return $this->recommendForNewUser($users, $reservations, $currentUser);
         } else {
-            // Jeśli użytkownik ma rezerwacje, wywołaj recommendForExistingUser
             return $this->recommendForExistingUser();
         }
     }
@@ -72,11 +73,16 @@ class RecommendationService
 
             $age = $this->calculateAge($user->birth);
             $sexEncoded = $this->encodeSex($user->sex);
-            $userFeatures = [$age ?? 0, $sexEncoded];
+            $userFeatures = [$age ?? 0, $sexEncoded]; // Zastąpienie null domyślną wartością
 
             $car = $reservation->car;
             $carBodyFeatureEncoded = $this->encodeCarBody($car->car_body);
             $carRatings = $this->getCarRatings($car->id);
+
+            // Upewnienie się, że carRatings zawiera tylko liczby, domyślnie 0 dla wartości null
+            $carRatings = array_map(function ($rating) {
+                return is_numeric($rating) ? $rating : 0;
+            }, $carRatings);
 
             if ($carBodyFeatureEncoded !== null) {
                 $trainingData[] = array_merge($userFeatures, [
@@ -95,6 +101,23 @@ class RecommendationService
         Log::info('Labels: ', $labels);
 
         return [$trainingData, $labels];
+    }
+
+    private function validateTrainingData($trainingData, $labels)
+    {
+        foreach ($trainingData as $dataPoint) {
+            foreach ($dataPoint as $value) {
+                if (!is_numeric($value)) {
+                    throw new \Exception("Invalid value in training data: " . print_r($dataPoint, true));
+                }
+            }
+        }
+
+        foreach ($labels as $label) {
+            if (!is_numeric($label)) {
+                throw new \Exception("Invalid label: " . print_r($label, true));
+            }
+        }
     }
 
     private function recommendForNewUser($users, $reservations, $currentUser)
@@ -134,16 +157,30 @@ class RecommendationService
             throw new \Exception("Number of features in prediction data does not match training data.");
         }
 
-        // Stwórz i wytrenuj model klasyfikacji
-        $classifier = new NaiveBayes();
+        // Pobieranie aktywnego algorytmu na podstawie pola is_active lub domyślnego algorytmu
+        $activeAlgorithm = RecommendationAlgorithm::where('is_active', true)
+        ->first() ?? RecommendationAlgorithm::where('algorithm_name', 'naive_bayes')->first();
+
+        // Pobieranie wartości dla decision_tree_depth z bazy danych
+        $d = $activeAlgorithm->decision_tree_depth ?? 5;  // Domyślnie 5, jeśli brak w bazie
+        $classifier = new DecisionTree($d);
+        $classifier->setNumFeatures((int) count($trainingData[0]));
+        $this->validateTrainingData($trainingData, $labels);
         $classifier->train($trainingData, $labels);
+
+        // Szukaj podobnych użytkowników
+        $similarUsers = $users->filter(function ($user) use ($currentUserFeatures) {
+            return $user->id !== Auth::id() && (
+                $this->encodeSex($user->sex) === $currentUserFeatures[1] &&
+                abs($this->calculateAge($user->birth) - $currentUserFeatures[0]) <= 5
+            );
+        });
 
         if ($similarUsers->isNotEmpty()) {
             $similarUserIds = $similarUsers->pluck('id')->toArray();
             $reservationsBySimilarUsers = $reservations->whereIn('user_id', $similarUserIds);
 
             if ($reservationsBySimilarUsers->isEmpty()) {
-                // Jeśli podobni użytkownicy nie mają rezerwacji, zwróć najpopularniejsze samochody
                 Log::info('Similar users have no reservations. Returning best rated and most rented cars.');
                 return $this->recommendBestRatedAndMostRentedCars();
             }
@@ -151,37 +188,60 @@ class RecommendationService
             $carRecommendations = $this->getCarRecommendationsFromReservations($reservationsBySimilarUsers);
             Log::info('Car Recommendations from Similar Users:', ['recommendedCarIds' => $carRecommendations]);
 
+            // Dodaj samochód z najwyższą oceną 'overall'
+            $highestRatedCar = Car::select('cars.id', 'cars.brand', 'cars.model', DB::raw('AVG(reviews.overall_rating) as avg_rating'))
+            ->join('reviews', 'cars.id', '=', 'reviews.car_id')
+            ->groupBy('cars.id', 'cars.brand', 'cars.model')
+            ->orderByDesc('avg_rating')
+            ->first();
+
+            // Jeśli znaleziono samochód z najwyższą oceną, dodaj go do rekomendacji
+            if ($highestRatedCar) {
+                $carRecommendations[] = $highestRatedCar->id;
+            }
+
             return $carRecommendations;
         } else {
             // Jeśli brak podobnych użytkowników, użyj modelu do przewidywań
             try {
                 $predictedCarIds = $classifier->predict([$currentUserFeatures]);
 
-                // Pobierz samochody, które są zgodne z przewidywanymi ID
                 $recommendedCars = Car::whereIn('id', $predictedCarIds)->get();
 
                 if ($recommendedCars->isNotEmpty()) {
-                    // Jeśli model zwrócił mniej niż 3 samochody, dodaj rekomendacje na podstawie ocen i liczby wypożyczeń
                     $topCarIds = $recommendedCars->pluck('id')->take(3)->toArray();
 
                     if (count($topCarIds) < 3) {
-                        // Dodaj dodatkowe rekomendacje, aby uzyskać 3 samochody
                         $additionalCars = $this->recommendBestRatedAndMostRentedCars();
                         $topCarIds = array_merge($topCarIds, $additionalCars);
                         $topCarIds = array_unique($topCarIds);
                         $topCarIds = array_slice($topCarIds, 0, 3);
                     }
 
+                    // Dodaj samochód z najwyższą oceną 'overall'
+                    $highestRatedCar = null;
+                    $highestRating = 1;
+
+                    foreach (Car::all() as $car) {
+                        $overallRating = $this->getCarRatings($car->id)['overall'];
+                        if ($overallRating > $highestRating) {
+                            $highestRatedCar = $car;
+                            $highestRating = $overallRating;
+                        }
+                    }
+
+                    if ($highestRatedCar) {
+                        $topCarIds[] = $highestRatedCar->id;
+                    }
+
                     Log::info('Car Recommendations for New User from Model:', ['recommendedCarIds' => $topCarIds]);
                     return $topCarIds;
                 } else {
-                    // Jeśli brak rekomendacji z modelu, użyj rekomendacji na podstawie ocen i liczby wypożyczeń
                     Log::info('Model did not provide recommendations. Falling back to best rated and most rented cars.');
                     return $this->recommendBestRatedAndMostRentedCars();
                 }
             } catch (\Exception $e) {
                 Log::error('Error in predicting car recommendations for new user:', ['error' => $e->getMessage()]);
-                // W przypadku błędu w przewidywaniu, użyj rekomendacji na podstawie ocen i liczby wypożyczeń
                 return $this->recommendBestRatedAndMostRentedCars();
             }
         }
@@ -204,7 +264,6 @@ class RecommendationService
             $carCounts[$carId]++;
         }
 
-        // Oblicz średnie oceny
         foreach ($carRatings as $carId => $ratings) {
             $numReviews = $carCounts[$carId];
             $carRatings[$carId] = [
@@ -216,7 +275,6 @@ class RecommendationService
             ];
         }
 
-        // Sortuj samochody według liczby wypożyczeń i ocen
         $sortedCars = collect($carCounts)->sortByDesc(function ($count, $carId) use ($carRatings) {
             $ratings = $carRatings[$carId];
             return $count * $ratings['overall'];
@@ -236,7 +294,7 @@ class RecommendationService
         }
 
         arsort($carRecommendations);
-        return array_slice(array_keys($carRecommendations), 0, 10); // Zwróć top 10 samochodów
+        return array_slice(array_keys($carRecommendations), 0, 10);
     }
 
     private function recommendForExistingUser()
@@ -291,8 +349,15 @@ class RecommendationService
                 return $this->recommendCarsByUserReservations($userReservations);
             }
 
-            // Stwórz i wytrenuj model klasyfikacji
-            $classifier = new NaiveBayes();
+            // Pobieranie aktywnego algorytmu na podstawie pola is_active lub domyślnego algorytmu
+            $activeAlgorithm = RecommendationAlgorithm::where('is_active', true)
+            ->first() ?? RecommendationAlgorithm::where('algorithm_name', 'naive_bayes')->first();
+
+            // Pobieranie wartości dla decision_tree_depth z bazy danych
+            $d = $activeAlgorithm->decision_tree_depth ?? 5;  // Domyślnie 5, jeśli brak w bazie
+            $classifier = new DecisionTree($d);
+            $classifier->setNumFeatures((int) count($trainingData[0]));
+            $this->validateTrainingData($trainingData, $labels);
             $classifier->train($trainingData, $labels);
 
             // Predykcja dla obecnego użytkownika
@@ -365,21 +430,19 @@ class RecommendationService
         return array_unique($recommendedCarIds);  // Unikalne samochody
     }
 
+    private function encodeSex($sex)
+    {
+        return $this->sexMapping[$sex] ?? 0; // Domyślna wartość to 0 (male)
+    }
+
+    private function encodeCarBody($carBody)
+    {
+        return $this->carBodyMapping[$carBody] ?? null;
+    }
+
     private function getCarRatings($carId)
     {
-        $defaultRatings = [
-            'comfort' => 0,
-            'driving_experience' => 0,
-            'fuel_efficiency' => 0,
-            'safety' => 0,
-            'overall' => 0
-        ];
-
         $reviews = Review::where('car_id', $carId)->get();
-        if ($reviews->isEmpty()) {
-            return $defaultRatings;
-        }
-
         $ratings = [
             'comfort' => 0,
             'driving_experience' => 0,
@@ -388,37 +451,17 @@ class RecommendationService
             'overall' => 0
         ];
 
-        foreach ($reviews as $review) {
-            $ratings['comfort'] += (float) $review->comfort_rating;
-            $ratings['driving_experience'] += (float) $review->driving_experience_rating;
-            $ratings['fuel_efficiency'] += (float) $review->fuel_efficiency_rating;
-            $ratings['safety'] += (float) $review->safety_rating;
-            $ratings['overall'] += (float) $review->overall_rating;
+        $count = $reviews->count();
+        if ($count > 0) {
+            foreach ($ratings as $key => $value) {
+                $ratings[$key] = $reviews->avg($key);
+            }
         }
 
-        $numReviews = $reviews->count();
-        return [
-            'comfort' => $ratings['comfort'] / $numReviews,
-            'driving_experience' => $ratings['driving_experience'] / $numReviews,
-            'fuel_efficiency' => $ratings['fuel_efficiency'] / $numReviews,
-            'safety' => $ratings['safety'] / $numReviews,
-            'overall' => $ratings['overall'] / $numReviews
-        ];
-    }
-
-    private function encodeSex($sex)
-    {
-        return $this->sexMapping[$sex] ?? 0;
-    }
-
-    private function encodeCarBody($carBody)
-    {
-        return $this->carBodyMapping[$carBody] ?? null;
-    }
-
-    private function calculateAge($birthDate)
-    {
-        return $birthDate ? Carbon::parse($birthDate)->age : null;
+        // Upewnij się, że wszystkie wartości są liczbowe
+        return array_map(function ($rating) {
+            return is_numeric($rating) ? $rating : 0;
+        }, $ratings);
     }
 
     private function getUsers()
@@ -428,6 +471,13 @@ class RecommendationService
 
     private function getReservations()
     {
-        return Reservation::with('car')->get();
+        return Reservation::all();
+    }
+
+    private function calculateAge($birthDate)
+    {
+        $birthDate = Carbon::parse($birthDate);
+        $currentDate = Carbon::now();
+        return $birthDate->diffInYears($currentDate);
     }
 }
