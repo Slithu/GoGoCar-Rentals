@@ -22,12 +22,12 @@ System rekomendacji w aplikacji wykorzystuje cztery różne klasyfikatory do prz
 - **Sztuczna sieć neuronowa MLP** (Multilayer Perceptron)
 - **Drzewo decyzyjne**
 
-Użytkownicy otrzymują spersonalizowane sugestie wynajmu na podstawie historii wypożyczeń, ocen pojazdów oraz innych czynników. Algorytmy są implementowane przy użyciu biblioteki **php-ai/php-ml** (wersja 0.10.0).
+Użytkownicy otrzymują spersonalizowane sugestie wynajmu na podstawie danych demograficznych (wiek i płeć), historii wypożyczeń oraz ocen pojazdów. Algorytmy są implementowane przy użyciu biblioteki **php-ai/php-ml** (wersja 0.10.0).
 
 ## Kluczowe funkcjonalności
 - **Autoryzacja i rejestracja** użytkowników
 - **Przeglądanie i wyszukiwanie** dostępnych samochodów
-- **System rezerwacji** pojazdów
+- **System rezerwacji i zwrotów** pojazdów
 - **Rekomendacje samochodów** na podstawie uczenia maszynowego
 - **Generowanie raportów PDF** dla administratora (biblioteka **laravel-dompdf** 2.2)
 - **Obsługa płatności online** poprzez **Stripe (stripe-php 15.2)**
