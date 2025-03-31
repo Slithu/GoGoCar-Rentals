@@ -95,7 +95,7 @@ class ReservationSeeder extends Seeder
         ]);
 
         DB::table('reservations')->insert([
-            'user_id' => 17,
+            'user_id' => 11,
             'car_id' => 17,
             'start_date' => '2024-11-10 15:00:00',
             'end_date' => '2024-11-13 12:00:00',
@@ -104,7 +104,7 @@ class ReservationSeeder extends Seeder
         ]);
 
         DB::table('reservations')->insert([
-            'user_id' => 17,
+            'user_id' => 11,
             'car_id' => 12,
             'start_date' => '2024-11-12 12:00:00',
             'end_date' => '2024-11-14 12:00:00',
@@ -113,7 +113,7 @@ class ReservationSeeder extends Seeder
         ]);
 
         DB::table('reservations')->insert([
-            'user_id' => 17,
+            'user_id' => 11,
             'car_id' => 22,
             'start_date' => '2024-11-17 17:40:00',
             'end_date' => '2024-11-20 12:00:00',

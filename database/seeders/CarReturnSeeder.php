@@ -20,10 +20,10 @@ class CarReturnSeeder extends Seeder
             'exterior_condition' => "Minor scratches or dents that are difficult to notice",
             'interior_condition' => "Minor signs of use, no damage to the upholstery or equipment",
             'exterior_damage_description' => '',
-            'interior_damage_description' => '',
+            'interior_condition_description' => '',
             'car_parts_condition' => '',
             'penalty_amount' => 0.00,
-            'comment' => 'Ok',
+            'comments' => 'Ok',
             'penalty_paid' => 0
         ]);
 
@@ -34,10 +34,10 @@ class CarReturnSeeder extends Seeder
             'exterior_condition' => "Minor scratches or dents that are difficult to notice",
             'interior_condition' => "The interior is in perfect condition, no signs of use",
             'exterior_damage_description' => '',
-            'interior_damage_description' => '',
+            'interior_condition_description' => '',
             'car_parts_condition' => '',
             'penalty_amount' => 50.00,
-            'comment' => 'The return of the car was delayed by an hour',
+            'comments' => 'The return of the car was delayed by an hour',
             'penalty_paid' => 1
         ]);
 
@@ -48,10 +48,10 @@ class CarReturnSeeder extends Seeder
             'exterior_condition' => "Minor scratches or dents that are difficult to notice",
             'interior_condition' => "The interior is in perfect condition, no signs of use",
             'exterior_damage_description' => '',
-            'interior_damage_description' => '',
+            'interior_condition_description' => '',
             'car_parts_condition' => '',
             'penalty_amount' => 50.00,
-            'comment' => 'Return Date an hour past Rental Date',
+            'comments' => 'Return Date an hour past Rental Date',
             'penalty_paid' => 1
         ]);
     }
